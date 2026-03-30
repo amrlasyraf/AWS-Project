@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# AWS
+.aws/
+credentials
+config
+
+# Kestra
+.kestra/
+
+# Secret / Sensitive
+*.pem
+*.key
+*.p12
+*.crt
+*.pfx
+secrets.*
+*.db
+*.sqlite
+
+# Database Credentials (specific to this project)
+db_password.txt
+*secret*
+config.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.hcl
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
