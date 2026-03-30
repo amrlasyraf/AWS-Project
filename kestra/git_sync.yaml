@@ -1,0 +1,9 @@
+id: git_sync
+namespace: my.project
+
+tasks:
+  - id: sync
+    type: io.kestra.plugin.git.Sync
+    url: https://github.com/amrlasyraf/AWS-Project.git
+    branch: main
+    password: "{{ vars.github_token }}"

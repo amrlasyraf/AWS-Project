@@ -1,0 +1,19 @@
+id: github_sync
+namespace: amrlasyraf.system
+
+description: Automatically syncs the main branch of AWS-Project with Kestra Namespace Files.
+
+tasks:
+  - id: sync_repository
+    type: io.kestra.plugin.git.SyncNamespaceFiles
+    url: https://github.com/amrlasyraf/AWS-Project.git
+    branch: main
+    username: amrlasyraf
+    password: "{{ secret('GITHUB_TOKEN') }}"
+    namespace: amrlasyraf
+    dryRun: false
+
+triggers:
+  - id: hourly_sync
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "0 * * * *"
