@@ -17,3 +17,6 @@ A production-grade data engineering repository for an E-Wallet application using
 ## 🛡️ Security
 - All sensitive credentials (AWSKeys, DB Passwords, etc.) are ignored via `.gitignore`.
 - Always use environment variables for passwords and keys.
+
+## ⏱️ Transaction State Simulation
+Simulates real-time e-wallet transaction states: PENDING (t+0), APPROVED (t+2s), and final SUCCESS/FAILED (t+7s) to model realistic data latency.
