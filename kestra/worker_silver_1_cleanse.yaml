@@ -1,0 +1,17 @@
+id: worker_silver_1_cleanse
+namespace: my.project
+
+description: "Worker: Cleanse and cast data from Bronze layer into Silver 1 layer."
+
+tasks:
+  - id: cleanse_transformation
+    type: io.kestra.plugin.jdbc.duckdb.Query
+    sql: |
+      -- REASONING: This subflow uses DuckDB to:
+      -- 1. Deduplicate records from multiple partners.
+      -- 2. Safely cast the defensive string columns from Bronze back into:
+      --    Dates, Decimals (MYR), Integers (IDs), and Booleans.
+      -- 3. Apply initial validation logic across all incoming datasets.
+      
+      -- Place for DuckDB logic following the Medallion flow...
+      -- Example: SELECT try_cast(col1 AS DATE) as date_col FROM bronze_table;

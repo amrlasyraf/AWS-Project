@@ -1,0 +1,18 @@
+id: worker_silver_2_merge
+namespace: my.project
+
+description: "Worker: Join cleansed data from Silver 1 layer into the final unified 'Big Wallet' dataset."
+
+tasks:
+  - id: merge_transformation
+    type: io.kestra.plugin.jdbc.duckdb.Query
+    sql: |
+      -- REASONING: This final subflow executes the joins between the:
+      -- 1. Cleansed Transactions table.
+      -- 2. Cleansed Users dimensional table.
+      -- 3. Cleansed Cards dimensional table.
+      
+      -- Output: Unified "Big Wallet" dataset stored in S3 for Athena/Power BI analysis.
+      -- This layer ensures all partner data is joined using (user_id, partner_id) and (card_id, partner_id).
+      
+      -- Place for DuckDB logic following the final Medallion merge...

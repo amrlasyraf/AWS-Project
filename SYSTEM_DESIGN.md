@@ -15,11 +15,18 @@
 ## 🏗️ Modular Architecture
 Project Shield-Stream implements a **Metadata-Driven** ingestion architecture, moving away from hardcoded logic to a scalable configuration model.
 
-### 🔌 Multi-Partner Scalability
-The system is designed to scale horizontally across any number of partners (A, B, C... N) with **Zero Code Changes** to the core transformation logic:
-- **Lambda Producer**: Uses a centralized `PARTNERS_CONFIG` metadata dictionary to map partner IDs to their respective RDS table schemas.
-- **Kestra Orchestration**: Employs dynamic `ForEach` task patterns to iterate through partner lists for extraction.
-- **Auto-Discovery**: The Silver layer uses wildcard S3 path detection (`partner=*`) and Hive-style partitioning to automatically ingest new partner data as soon as it exists in the Bronze layer.
+### 🔌 Enterprise Orchestration (Master-Worker Pattern)
+To ensure robustness and scalability, the pipeline follows the **Master-Worker (Subflow)** orchestration pattern using Kestra:
+- **Lead Orchestrator**: Acts as the central controller, managing active partner lists and coordinating execution across workers.
+- **Worker Bronze**: Parametrized flow for siloed partner data extraction into S3.
+- **Worker Silver (Cleanse & Merge)**: Dedicated flows for multi-stage data transformation.
+
+This separation of concerns allows for isolated failure modes—if Partner A's extraction fails, it does not impede the extraction for Partner B or subsequent transformation steps.
+
+### 🛠️ Defensive "All-String" Bronze Extraction
+A critical defensive measure at the **Bronze Layer** is the manual casting of **EVERY** column to **STRING (TEXT/VARCHAR)** during the initial extraction from RDS.
+- **Goal**: Prevent pipeline failures caused by schema drift or datatype inconsistencies between Partner A and Partner B (e.g. `amount` as `INT` vs `NUMERIC`).
+- **Resolution**: Casting back to correct types (Decimal, Date, etc.) is handled downstream in the **Silver 1 (Cleanse)** layer using `try_cast` logic.
 
 ---
 

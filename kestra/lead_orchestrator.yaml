@@ -1,0 +1,42 @@
+id: lead_orchestrator
+namespace: my.project
+
+description: "Controlling flow for Project Shield-Stream multi-partner medallion architecture."
+
+variables:
+  # Metadata config for partners
+  active_partners:
+    - id: PARTNER_A
+      suffix: ""
+    - id: PARTNER_B
+      suffix: "_partner_b"
+
+tasks:
+  - id: parallel_bronze_layer
+    type: io.kestra.core.tasks.flows.ForEach
+    values: "{{ vars.active_partners }}"
+    concurrencyLimit: 2
+    tasks:
+      - id: trigger_bronze_extraction
+        type: io.kestra.core.tasks.flows.Execute
+        flowId: worker_bronze_ingestion
+        namespace: my.project
+        wait: true
+        transmitFailed: true
+        inputs:
+          partner_id: "{{ taskrun.value.id }}"
+          suffix: "{{ taskrun.value.suffix }}"
+
+  - id: silver_1_cleanse
+    type: io.kestra.core.tasks.flows.Execute
+    flowId: worker_silver_1_cleanse
+    namespace: my.project
+    wait: true
+    transmitFailed: true
+
+  - id: silver_2_merge
+    type: io.kestra.core.tasks.flows.Execute
+    flowId: worker_silver_2_merge
+    namespace: my.project
+    wait: true
+    transmitFailed: true
