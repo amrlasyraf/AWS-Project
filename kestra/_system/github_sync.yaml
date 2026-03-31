@@ -11,4 +11,4 @@ tasks:
 triggers:
   - id: auto_sync
     type: io.kestra.plugin.core.trigger.Schedule
-    cron: "*/5 * * * *"
+    cron: "*/2 * * * *"

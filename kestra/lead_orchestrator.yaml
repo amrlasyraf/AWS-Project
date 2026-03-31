@@ -33,14 +33,14 @@ tasks:
           suffix: "{{ taskrun.value.suffix }}"
 
   - id: silver_1_cleanse
-    type: io.kestra.core.tasks.flows.Execute
+    type: io.kestra.plugin.core.flow.Subflow
     flowId: worker_silver_1_cleanse
     namespace: my.project
     wait: true
     transmitFailed: true
 
   - id: silver_2_merge
-    type: io.kestra.core.tasks.flows.Execute
+    type: io.kestra.plugin.core.flow.Subflow
     flowId: worker_silver_2_merge
     namespace: my.project
     wait: true
