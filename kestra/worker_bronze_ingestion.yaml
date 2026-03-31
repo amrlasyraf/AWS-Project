@@ -23,8 +23,8 @@ tasks:
         type: io.kestra.plugin.core.kv.Get
         namespace: my.project
         key: "watermark_{{ inputs.partner_id }}_{{ taskrun.value }}"
-        # Default to 1970 if not found
-        failureIfNotFound: false
+        # Correct property for Kestra 0.15+ (kv Get)
+        errorOnMissing: false
 
       - id: set_default_watermark
         type: io.kestra.plugin.core.debug.Return
