@@ -8,5 +8,5 @@ tasks:
     branch: main
     username: amrlasyraf
     password: "{{ secret('GITHUB_TOKEN') }}"
-    # Point this to the folder in your repo where the .yaml flows are
+    # This MUST point to the folder in GitHub where your .yaml files live
     gitDirectory: kestra/
