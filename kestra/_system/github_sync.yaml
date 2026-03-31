@@ -8,5 +8,9 @@ tasks:
     branch: main
     username: amrlasyraf
     password: "{{ secret('GITHUB_TOKEN') }}"
-    # This MUST point to the folder in GitHub where your .yaml files live
     gitDirectory: kestra/
+
+triggers:
+  - id: auto_sync
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "*/5 * * * *" # Runs every 5 minutes so you don't have to wait
