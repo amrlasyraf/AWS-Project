@@ -28,7 +28,14 @@ A **Classic PAT** is recommended for full compatibility:
 ---
 
 ## 🔄 3. Kestra Registry Flow
-The flow has been drafted in `kestra/_system/github_sync.yaml`. It uses the `SyncNamespaceFiles` task to pull your code into Kestra's internal storage (`Namespace Files`).
+The flow has been configured in `kestra/_system/github_sync.yaml`. 
+
+### ⚙️ Sync vs SyncNamespaceFiles
+- **`io.kestra.plugin.git.Sync`**: (Recommended) This task is used to pull YAML files from a Git repository and **register them as executable Flows** in a target Kestra namespace.
+- **`io.kestra.plugin.git.SyncNamespaceFiles`**: This task only syncs files to Kestra's internal "Namespace Files" storage (useful for storing subscripts or configuration files, but **not** for triggering/executing Flows).
+
+### 📄 Configuration Example
+The current setup synchronizes the `kestra/` directory from GitHub to the `my.project` namespace:
 
 ```yaml
 id: github_sync
@@ -36,13 +43,13 @@ namespace: amrlasyraf.system
 
 tasks:
   - id: sync_repository
-    type: io.kestra.plugin.git.SyncNamespaceFiles # Syncs repo content to Namespace Files
+    type: io.kestra.plugin.git.Sync
     url: https://github.com/amrlasyraf/AWS-Project.git
     branch: main
     username: amrlasyraf
     password: "{{ secret('GITHUB_TOKEN') }}"
-    namespace: amrlasyraf # Target Kestra namespace
-    dryRun: false
+    targetNamespace: my.project
+    gitDirectory: kestra/
 
 triggers:
   - id: hourly_sync

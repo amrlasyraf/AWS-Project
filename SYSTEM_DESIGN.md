@@ -13,7 +13,10 @@
 ---
 
 ## 🏗️ Modular Architecture
-Project Shield-Stream implements a **Metadata-Driven** ingestion architecture, moving away from hardcoded logic to a scalable configuration model.
+Project Shield-Stream implements a **Metadata-Driven** ingestion architecture, moving away from hardcoded logic to a scalable configuration model. 
+
+> [!NOTE]
+> The original monolithic `wallet_data_pipeline.yaml` has been officially deprecated and removed from the repository. All orchestration is now handled via the Enterprise Master-Worker (Subflow) pattern.
 
 ### 🔌 Enterprise Orchestration (Master-Worker Pattern)
 To ensure robustness and scalability, the pipeline follows the **Master-Worker (Subflow)** orchestration pattern using Kestra:
