@@ -32,8 +32,9 @@ def lambda_handler(event, context):
             'cards': f"cards{suffix}"
         }
 
-        # Fetch valid users ONCE outside the loop
-        valid_users = [row[0] for row in con.run(f"SELECT user_id FROM {tables['users']}")]
+        # FIX: Fetch all valid (card_id, user_id) pairs ONCE outside the loop.
+        # This guarantees we never pick a user without a card.
+        valid_card_user_pairs = con.run(f"SELECT card_id, user_id FROM {tables['cards']}")
 
         batch_size = 20 
         insert_query = f"""
@@ -46,10 +47,9 @@ def lambda_handler(event, context):
 
         for _ in range(batch_size):
             t_id = str(uuid.uuid4())
-            u_id = random.choice(valid_users)
             
-            # FIX: Fetch a card that actually belongs to this specific user
-            c_id = con.run(f"SELECT card_id FROM {tables['cards']} WHERE user_id = {u_id} LIMIT 1")[0][0]
+            # Instantly get a valid card and its exact owner
+            c_id, u_id = random.choice(valid_card_user_pairs)
             
             amt = round(random.uniform(10.0, 500.0), 2)
             created_time = datetime.now()
