@@ -23,14 +23,25 @@ A production-grade data engineering pipeline for an E-Wallet application, simula
 Kestra Scheduler
       │
       ▼
-AWS Lambda: transaction_producer
+AWS Lambda: transaction_producer (Randomly selects Partner A or B)
       │  Generates 20 transactions per run
       │  Each transaction produces 3 records (lifecycle states)
       ▼
 AWS RDS (PostgreSQL)
-      │  transactions table
+      │  Siloed Tables: transactions (A) vs transactions_partner_b (B)
       ▼
-AWS S3 (future: downstream analytics)
+Kestra Medallion Pipeline
+      │
+      ├─ Bronze Layer (Parallel Extraction)
+      │     └─ Parquet Storage (S3: bronze/partner_a/ vs bronze/partner_b/)
+      │
+      ▼
+Silver Layer (DuckDB Unified Merge)
+      │  UNION ALL both partners
+      │  Join with Users & Cards (user_id + partner_id)
+      │  MYR Conversion & Latency Calculation
+      ▼
+AWS S3 (silver/unified_wallet_data/) ──► Athena Table (Unified View)
 ```
 
 ### Transaction Lifecycle
@@ -52,12 +63,14 @@ Each transaction simulates a realistic processing delay by inserting **3 records
 ```
 AWS-Project/
 ├── kestra/
-│   └── git_sync.yaml          # Kestra Git Sync workflow (auto-deploys from GitHub)
+│   ├── git_sync.yaml           # Kestra Git Sync workflow
+│   └── wallet_data_pipeline.yaml # New: Medallion Pipeline (Bronze/Silver)
 ├── lambdas/
-│   └── transaction_producer.py # Lambda: generates synthetic e-wallet transactions
+│   └── transaction_producer.py # Updated: Supports multi-partner silos (A/B)
 ├── scripts/
 │   └── sql/
-│       └── seed_dimensions.sql # Seeds users (×100) and cards (×200) into RDS
+│       ├── seed_dimensions.sql # Seeds users and cards into RDS
+│       └── athena_silver_table.sql # New: DDL for Athena Unified Table
 └── .gitignore                  # Excludes all secrets and credentials
 ```
 

@@ -4,6 +4,12 @@ import random
 from datetime import datetime, timedelta
 import pg8000.native
 
+# Modular Configuration
+PARTNERS_CONFIG = {
+    'PARTNER_A': {'suffix': ''},
+    'PARTNER_B': {'suffix': '_partner_b'}
+}
+
 def lambda_handler(event, context):
     host = os.environ.get('DB_HOST')
     password = os.environ.get('DB_PASSWORD')
@@ -14,13 +20,24 @@ def lambda_handler(event, context):
     )
     
     try:
-        # Fetch valid IDs
-        valid_users = [row[0] for row in con.run("SELECT user_id FROM users")]
-        valid_cards = [row[0] for row in con.run("SELECT card_id FROM cards")]
+        # Task 1: Select partner from metadata configuration
+        partner_id = random.choice(list(PARTNERS_CONFIG.keys()))
+        config = PARTNERS_CONFIG[partner_id]
+        suffix = config['suffix']
+        
+        # Map tables dynamically
+        tables = {
+            'transactions': f"transactions{suffix}",
+            'users': f"users{suffix}",
+            'cards': f"cards{suffix}"
+        }
+
+        # Fetch valid users ONCE outside the loop
+        valid_users = [row[0] for row in con.run(f"SELECT user_id FROM {tables['users']}")]
 
         batch_size = 20 
-        insert_query = """
-        INSERT INTO transactions (
+        insert_query = f"""
+        INSERT INTO {tables['transactions']} (
             transaction_id, user_id, card_id, amount, status, 
             transaction_time, updated_at, use_chip, merchant_id, merchant_name, mcc, risk_score
         )
@@ -30,7 +47,10 @@ def lambda_handler(event, context):
         for _ in range(batch_size):
             t_id = str(uuid.uuid4())
             u_id = random.choice(valid_users)
-            c_id = random.choice(valid_cards)
+            
+            # FIX: Fetch a card that actually belongs to this specific user
+            c_id = con.run(f"SELECT card_id FROM {tables['cards']} WHERE user_id = {u_id} LIMIT 1")[0][0]
+            
             amt = round(random.uniform(10.0, 500.0), 2)
             created_time = datetime.now()
             
@@ -54,7 +74,12 @@ def lambda_handler(event, context):
                         status=status, time=created_time, updated=updated_at,
                         chip=chip, m_id=m_id, m_name=m_name, mcc=mcc, risk=risk)
         
-        return {"status": "success", "transactions_processed": batch_size, "total_records": batch_size * 3}
+        return {
+            "status": "success", 
+            "partner": partner_id,
+            "transactions_processed": batch_size, 
+            "total_records": batch_size * 3
+        }
         
     except Exception as e:
         print(f"Error: {e}")
