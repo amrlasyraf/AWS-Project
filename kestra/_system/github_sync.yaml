@@ -1,6 +1,5 @@
 id: github_sync
 namespace: amrlasyraf.system
-
 tasks:
   - id: sync_repository
     type: io.kestra.plugin.git.Sync
@@ -9,8 +8,7 @@ tasks:
     username: amrlasyraf
     password: "{{ secret('GITHUB_TOKEN') }}"
     gitDirectory: kestra/
-
 triggers:
   - id: auto_sync
     type: io.kestra.plugin.core.trigger.Schedule
-    cron: "*/5 * * * *" # Runs every 5 minutes so you don't have to wait
+    cron: "*/5 * * * *"

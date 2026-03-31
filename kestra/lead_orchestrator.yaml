@@ -5,7 +5,7 @@ description: "Controlling flow for Project Shield-Stream multi-partner medallion
 
 triggers:
   - id: cron_schedule
-    type: io.kestra.core.tasks.triggers.Schedule
+    type: io.kestra.plugin.core.trigger.Schedule
     cron: "0 */2 * * *" # Trigger every 2 hours as a "dumb" schedule (KV store handles state)
 
 variables:
@@ -18,12 +18,12 @@ variables:
 
 tasks:
   - id: parallel_bronze_layer
-    type: io.kestra.core.tasks.flows.ForEach
+    type: io.kestra.plugin.core.flow.ForEach
     values: "{{ vars.active_partners }}"
     concurrencyLimit: 2
     tasks:
       - id: trigger_bronze_extraction
-        type: io.kestra.core.tasks.flows.Execute
+        type: io.kestra.plugin.core.flow.Subflow
         flowId: worker_bronze_ingestion
         namespace: my.project
         wait: true

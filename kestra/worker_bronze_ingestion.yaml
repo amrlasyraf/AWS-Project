@@ -16,18 +16,18 @@ variables:
 
 tasks:
   - id: extraction_loop
-    type: io.kestra.core.tasks.flows.ForEach
+    type: io.kestra.plugin.core.flow.ForEach
     values: ["transactions", "users", "cards"]
     tasks:
       - id: get_watermark
-        type: io.kestra.core.tasks.kv.Get
+        type: io.kestra.plugin.core.kv.Get
         namespace: my.project
         key: "watermark_{{ inputs.partner_id }}_{{ taskrun.value }}"
         # Default to 1970 if not found
         failureIfNotFound: false
 
       - id: set_default_watermark
-        type: io.kestra.core.tasks.debug.Return
+        type: io.kestra.plugin.core.debug.Return
         format: "{{ outputs.get_watermark.value ?? '1970-01-01 00:00:00' }}"
 
       - id: extract_incremental
@@ -59,7 +59,7 @@ tasks:
         store: true
 
       - id: check_if_empty
-        type: io.kestra.core.tasks.flows.If
+        type: io.kestra.plugin.core.flow.If
         condition: "{{ outputs.extract_incremental.size > 0 }}"
         then:
           - id: to_parquet
@@ -81,7 +81,7 @@ tasks:
             fetchType: FETCH_ONE
 
           - id: update_watermark
-            type: io.kestra.core.tasks.kv.Set
+            type: io.kestra.plugin.core.kv.Set
             namespace: my.project
             key: "watermark_{{ inputs.partner_id }}_{{ taskrun.value }}"
             value: "{{ outputs.calculate_new_watermark.row.max_ts }}"
