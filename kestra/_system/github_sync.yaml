@@ -1,8 +1,6 @@
 id: github_sync
 namespace: amrlasyraf.system
 
-description: "Syncs GitHub files and registers them as executable Flows."
-
 tasks:
   - id: sync_repository
     type: io.kestra.plugin.git.Sync
@@ -10,11 +8,5 @@ tasks:
     branch: main
     username: amrlasyraf
     password: "{{ secret('GITHUB_TOKEN') }}"
-    # Point this to the folder in your repo where the .yaml files are
-    gitDirectory: kestra/ 
-
-triggers:
-  - id: hourly_sync
-    type: io.kestra.plugin.core.trigger.Schedule
-    cron: "0 * * * *"
-    timezone: "Asia/Kuala_Lumpur"
+    # Point this to the folder in your repo where the .yaml flows are
+    gitDirectory: kestra/
