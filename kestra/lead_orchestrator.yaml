@@ -3,6 +3,11 @@ namespace: my.project
 
 description: "Controlling flow for Project Shield-Stream multi-partner medallion architecture."
 
+triggers:
+  - id: cron_schedule
+    type: io.kestra.core.tasks.triggers.Schedule
+    cron: "0 */2 * * *" # Trigger every 2 hours as a "dumb" schedule (KV store handles state)
+
 variables:
   # Metadata config for partners
   active_partners:

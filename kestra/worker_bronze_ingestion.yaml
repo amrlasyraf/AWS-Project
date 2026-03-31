@@ -1,7 +1,7 @@
 id: worker_bronze_ingestion
 namespace: my.project
 
-description: "Worker: Defensive extraction of partner data from RDS silos into S3 Bronze storage."
+description: "Worker: Stateful Incremental CDC (Change Data Capture) with Defensive String Casting."
 
 inputs:
   - id: partner_id
@@ -19,27 +19,23 @@ tasks:
     type: io.kestra.core.tasks.flows.ForEach
     values: ["transactions", "users", "cards"]
     tasks:
-      - id: extract_siloed_table
+      - id: get_watermark
+        type: io.kestra.core.tasks.kv.Get
+        namespace: my.project
+        key: "watermark_{{ inputs.partner_id }}_{{ taskrun.value }}"
+        # Default to 1970 if not found
+        failureIfNotFound: false
+
+      - id: set_default_watermark
+        type: io.kestra.core.tasks.debug.Return
+        format: "{{ outputs.get_watermark.value ?? '1970-01-01 00:00:00' }}"
+
+      - id: extract_incremental
         type: io.kestra.plugin.jdbc.postgresql.Query
         url: "jdbc:postgresql://{{ vars.db_host }}:5432/postgres"
         username: postgres
         password: "{{ vars.db_password }}"
-        # DEFENSIVE STRATEGY: Explicitly cast all columns to TEXT to prevent schema drift failure
-        # This ensures Partner A and Partner B types never crash the initial ingestion.
-        sql: |
-          SELECT * FROM (
-            SELECT 
-              CAST(t.* AS TEXT) as raw_record_dummy, -- Not used, just to ensure we can cast the whole row if needed
-              * 
-            FROM {{ taskrun.value }}{{ inputs.suffix }} t
-          ) sub;
-          -- Note: In a real production scenario, we would list every column specifically:
-          -- SELECT col1::TEXT, col2::TEXT... FROM table
-        # Since I don't want to maintain a hardcoded list of every column that might change, 
-        # I'll use a more generic approach or list them based on the Data Dictionary in SYSTEM_DESIGN.md.
-
-        # Refined SQL for transactions (as an example of the requirement):
-        # We will use a dynamic approach in Kestra or just follow the requirement for the 3 known tables.
+        # DEFENSIVE: All columns to TEXT + Incremental Filter
         sql: >
           {% if taskrun.value == 'transactions' %}
             SELECT 
@@ -47,24 +43,45 @@ tasks:
               status::TEXT, transaction_time::TEXT, updated_at::TEXT, use_chip::TEXT, 
               merchant_id::TEXT, merchant_name::TEXT, mcc::TEXT, risk_score::TEXT
             FROM {{ taskrun.value }}{{ inputs.suffix }}
+            WHERE updated_at > '{{ outputs.set_default_watermark.value }}'
           {% elif taskrun.value == 'users' %}
             SELECT 
               user_id::TEXT, current_age::TEXT, yearly_income::TEXT, credit_score::TEXT
             FROM {{ taskrun.value }}{{ inputs.suffix }}
+            WHERE updated_at > '{{ outputs.set_default_watermark.value }}'
           {% elif taskrun.value == 'cards' %}
             SELECT 
               card_id::TEXT, user_id::TEXT, card_brand::TEXT, credit_limit::TEXT, card_on_dark_web::TEXT
             FROM {{ taskrun.value }}{{ inputs.suffix }}
+            WHERE updated_at > '{{ outputs.set_default_watermark.value }}'
           {% endif %}
+        fetchType: FETCH
         store: true
 
-      - id: to_parquet
-        type: io.kestra.plugin.serdes.parquet.IonToParquet
-        from: "{{ outputs.extract_siloed_table.uri }}"
+      - id: check_if_empty
+        type: io.kestra.core.tasks.flows.If
+        condition: "{{ outputs.extract_incremental.size > 0 }}"
+        then:
+          - id: to_parquet
+            type: io.kestra.plugin.serdes.parquet.IonToParquet
+            from: "{{ outputs.extract_incremental.uri }}"
 
-      - id: upload_to_s3
-        type: io.kestra.plugin.aws.s3.Put
-        from: "{{ outputs.to_parquet.uri }}"
-        bucket: "{{ vars.s3_bucket }}"
-        # Partitioned by partner and hour
-        key: "bronze/partner={{ inputs.partner_id }}/table={{ taskrun.value }}/hour={{ vars.extraction_hour }}/data.parquet"
+          - id: upload_to_s3
+            type: io.kestra.plugin.aws.s3.Put
+            from: "{{ outputs.to_parquet.uri }}"
+            bucket: "{{ vars.s3_bucket }}"
+            key: "bronze/partner={{ inputs.partner_id }}/table={{ taskrun.value }}/hour={{ vars.extraction_hour }}/data.parquet"
+
+          - id: calculate_new_watermark
+            type: io.kestra.plugin.jdbc.postgresql.Query
+            url: "jdbc:postgresql://{{ vars.db_host }}:5432/postgres"
+            username: postgres
+            password: "{{ vars.db_password }}"
+            sql: "SELECT MAX(updated_at)::TEXT as max_ts FROM {{ taskrun.value }}{{ inputs.suffix }}"
+            fetchType: FETCH_ONE
+
+          - id: update_watermark
+            type: io.kestra.core.tasks.kv.Set
+            namespace: my.project
+            key: "watermark_{{ inputs.partner_id }}_{{ taskrun.value }}"
+            value: "{{ outputs.calculate_new_watermark.row.max_ts }}"

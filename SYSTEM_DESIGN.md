@@ -28,6 +28,12 @@ A critical defensive measure at the **Bronze Layer** is the manual casting of **
 - **Goal**: Prevent pipeline failures caused by schema drift or datatype inconsistencies between Partner A and Partner B (e.g. `amount` as `INT` vs `NUMERIC`).
 - **Resolution**: Casting back to correct types (Decimal, Date, etc.) is handled downstream in the **Silver 1 (Cleanse)** layer using `try_cast` logic.
 
+### 💾 Stateful Incremental CDC (KV Store)
+Project Shield-Stream uses **Kestra's internal Key-Value (KV) Store** to manage stateful, idempotent incremental syncs (CDC).
+- **Strategy**: Instead of relying on brittle "schedule-based time windows" (start/end dates), each worker subflow maintains its own `watermark_{partner}_{table}` pointer.
+- **Resilience**: This ensures that even if a scheduled execution is skipped or fails, the next successful run will pick up from the exact last timestamp successfully persisted to S3.
+- **Idempotency**: By updating the watermark **only after** a successful S3 upload, we guarantee zero data loss without requiring complex time-range overhead in the master orchestrator.
+
 ---
 
 ## 🔄 The Medallion Flow
