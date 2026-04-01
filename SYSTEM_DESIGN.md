@@ -39,6 +39,16 @@ Project Shield-Stream uses **Kestra's internal Key-Value (KV) Store** to manage 
 
 ---
 
+## 🔐 Secure Credential Management (**Status**: `Production-Ready`)
+To meet enterprise security standards for Project Shield-Stream, database credentials are managed through a **Zero-Governance** model:
+- **No Internal Storage**: RDS credentials (host, user, password, dbname) are **NEVER** stored in Kestra’s internal Key-Value (KV) store or as flow variables.
+- **Dynamic Secret Injection**:
+    - **Cloud Native**: Kestra passes temporary AWS IAM credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) from the centralized KV store to the isolated Docker container.
+    - **Runtime Retrieval**: The Python extraction script (`extractor.py`) utilizes the `boto3` client to dynamically fetch the production RDS credentials directly from **AWS Secrets Manager** (`shield-stream/bronze/db-credentials`) during execution.
+- **Isolation**: This ensures that sensitive database access remains within the AWS security perimeter, while Kestra acts only as a secure orchestrator.
+
+---
+
 ## 🔄 The Medallion Flow
 
 ### 🧱 Bronze (The Vault)

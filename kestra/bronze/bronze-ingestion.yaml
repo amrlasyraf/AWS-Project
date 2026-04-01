@@ -14,7 +14,6 @@ inputs:
 variables:
   # Monitoring ARN
   sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
-  aws_secret_name: "ProjectShield/RDS/Postgres"
   extraction_hour: "{{ now() | date('yyyy-MM-dd-HH') }}"
 
 tasks:
@@ -34,9 +33,9 @@ tasks:
         namespaceFiles:
           enabled: true
         beforeCommands:
-          - "uv pip install boto3 pandas pyarrow"
+          - pip install uv
+          - uv pip install --system pandas pyarrow fastparquet boto3
         env:
-          AWS_SECRET_NAME: "{{ vars.aws_secret_name }}"
           AWS_ACCESS_KEY_ID: "{{ kv('AWS_ACCESS_KEY_ID') }}"
           AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
           AWS_DEFAULT_REGION: "ap-southeast-1"

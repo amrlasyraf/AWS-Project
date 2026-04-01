@@ -7,19 +7,6 @@ import boto3
 import json
 from datetime import datetime
 
-def get_db_creds():
-    """Fetches database credentials from AWS Secrets Manager."""
-    secret_name = os.environ.get('AWS_SECRET_NAME', 'ProjectShield/RDS/Postgres')
-    region_name = os.environ.get('AWS_DEFAULT_REGION', 'ap-southeast-1')
-
-    client = boto3.client('secretsmanager', region_name=region_name)
-    try:
-        response = client.get_secret_value(SecretId=secret_name)
-        return json.loads(response['SecretString'])
-    except Exception as e:
-        print(f"Error fetching secret {secret_name}: {e}", file=sys.stderr)
-        sys.exit(1)
-
 def main():
     """
     Extracts data from a PostgreSQL table based on a watermark and saves it to a Parquet file.
@@ -32,13 +19,19 @@ def main():
     args = parser.parse_args()
 
     # Fetch DB credentials from AWS Secrets Manager
-    db_creds = get_db_creds()
+    client = boto3.client('secretsmanager', region_name='ap-southeast-1')
+    try:
+        response = client.get_secret_value(SecretId='shield-stream/bronze/db-credentials')
+        db_creds = json.loads(response['SecretString'])
+    except Exception as e:
+        print(f"Error fetching AWS Secrets: {e}", file=sys.stderr)
+        sys.exit(1)
     
-    db_host = db_creds.get('host')
-    db_password = db_creds.get('password')
-    db_user = db_creds.get('username', 'postgres')
-    db_name = db_creds.get('dbname', 'postgres')
-    db_port = db_creds.get('port', '5432')
+    db_host = db_creds['DB_HOST']
+    db_password = db_creds['DB_PASSWORD']
+    db_user = db_creds['DB_USER']
+    db_name = db_creds['DB_NAME']
+    db_port = db_creds.get('DB_PORT', '5432')
 
     conn = None
     try:
