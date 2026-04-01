@@ -65,3 +65,10 @@ tasks:
             namespace: my.project
             key: "watermark_{{ inputs.partner_id }}_{{ taskrun.value }}"
             value: "{{ outputs.python_extract.stdOutValue | substringAfter('NEW_WATERMARK: ') | trim }}"
+
+errors:
+  - id: alert_sns
+    type: io.kestra.plugin.aws.sns.Publish
+    topicArn: "{{ vars.sns_topic_arn }}"
+    subject: "FAILED: Kestra Flow {{ flow.id }} [{{ execution.id }}]"
+    message: "The flow {{ flow.id }} failed in namespace {{ flow.namespace }}. Check logs at: {{ execution.url }}"

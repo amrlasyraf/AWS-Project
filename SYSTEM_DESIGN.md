@@ -69,6 +69,14 @@ Project Shield-Stream uses **Kestra's internal Key-Value (KV) Store** to manage 
 
 ---
 
+## 🚨 Monitoring & Alerting
+To ensure high availability and rapid incident response, Project Shield-Stream implements **Mandatory SNS Alerting** across all orchestration layers:
+- **Scope**: Every flow (Master and Worker) contains a root-level `errors` block.
+- **Mechanism**: Utilizes `io.kestra.plugin.aws.sns.Publish` to push failure notifications to a centralized SNS Topic (`{{ vars.sns_topic_arn }}`).
+- **Payload**: Alerts include the Flow ID, Execution ID, Namespace, and a direct deep-link to the Kestra execution logs for immediate debugging.
+
+---
+
 ## 📖 Data Dictionary
 
 | Column | Type | Origin | Description |

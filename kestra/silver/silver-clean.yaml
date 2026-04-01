@@ -15,3 +15,10 @@ tasks:
       
       -- Place for DuckDB logic following the Medallion flow...
       -- Example: SELECT try_cast(col1 AS DATE) as date_col FROM bronze_table;
+
+errors:
+  - id: alert_sns
+    type: io.kestra.plugin.aws.sns.Publish
+    topicArn: "{{ vars.sns_topic_arn }}"
+    subject: "FAILED: Kestra Flow {{ flow.id }} [{{ execution.id }}]"
+    message: "The flow {{ flow.id }} failed in namespace {{ flow.namespace }}. Check logs at: {{ execution.url }}"
