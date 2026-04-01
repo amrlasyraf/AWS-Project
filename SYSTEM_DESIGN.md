@@ -91,3 +91,4 @@ Project Shield-Stream uses **Kestra's internal Key-Value (KV) Store** to manage 
 This `SYSTEM_DESIGN.md` file serves as the **Single Source of Truth** for the Merchant Risk Department. 
 - **Requirement**: This documentation MUST be updated automatically (as part of the Git Sync workflow) whenever a new e-wallet partner, table schema, or business transformation logic is introduced.
 - **Consistency**: The `partners` list in Kestra variables and the `PARTNERS_CONFIG` in Python Lambda must always remain synchronized with the architectural overview defined here.
+- **Sync Mechanism**: The `github_sync.yaml` mechanism uses the `SyncNamespaceFiles` plugin with `gitDirectory: kestra/` to pull the modular repository structure directly into the `my.project` namespace for automated execution.

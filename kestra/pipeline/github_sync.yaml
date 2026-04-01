@@ -8,7 +8,7 @@ tasks:
     username: amrlasyraf
     password: "{{ secret('GITHUB_TOKEN') }}"
     namespace: my.project
-    from: kestra/
+    gitDirectory: kestra/
 triggers:
   - id: auto_sync
     type: io.kestra.plugin.core.trigger.Schedule
