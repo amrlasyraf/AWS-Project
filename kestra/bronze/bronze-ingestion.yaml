@@ -12,6 +12,8 @@ inputs:
     description: "The table suffix for this partner (e.g. _partner_b)"
 
 variables:
+  # Monitoring ARN
+  sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
   extraction_hour: "{{ now() | date('yyyy-MM-dd-HH') }}"
 
 tasks:

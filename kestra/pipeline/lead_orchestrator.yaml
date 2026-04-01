@@ -9,6 +9,9 @@ triggers:
     cron: "0 */2 * * *" # Trigger every 2 hours as a "dumb" schedule (KV store handles state)
 
 variables:
+  # Monitoring ARN
+  sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
+  
   # Metadata config for partners
   active_partners:
     - id: PARTNER_A

@@ -3,6 +3,10 @@ namespace: my.project
 
 description: "Worker: Partner-Union-heavy unification across all partners."
 
+variables:
+  # Monitoring ARN
+  sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
+
 tasks:
   - id: unify_partners
     type: io.kestra.plugin.jdbc.duckdb.Query
