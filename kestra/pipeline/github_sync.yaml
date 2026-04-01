@@ -2,12 +2,13 @@ id: github_sync
 namespace: amrlasyraf.system
 tasks:
   - id: sync_repository
-    type: io.kestra.plugin.git.Sync
+    type: io.kestra.plugin.git.SyncNamespaceFiles
     url: https://github.com/amrlasyraf/AWS-Project.git
     branch: main
     username: amrlasyraf
     password: "{{ secret('GITHUB_TOKEN') }}"
-    gitDirectory: kestra/
+    namespace: my.project
+    from: kestra/
 triggers:
   - id: auto_sync
     type: io.kestra.plugin.core.trigger.Schedule

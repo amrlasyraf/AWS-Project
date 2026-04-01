@@ -64,15 +64,15 @@ def main():
                 
                 # Format datetime to string if necessary
                 if isinstance(max_updated_at, datetime):
-                    print(max_updated_at.strftime('%Y-%m-%d %H:%M:%S.%f'))
+                    print(f"NEW_WATERMARK: {max_updated_at.strftime('%Y-%m-%d %H:%M:%S.%f')}")
                 else:
-                    print(max_updated_at)
+                    print(f"NEW_WATERMARK: {max_updated_at}")
             except (ValueError, IndexError):
                 # Fallback to current watermark if updated_at is not found in results
-                print(args.watermark)
+                print(f"NEW_WATERMARK: {args.watermark}")
         else:
             # If no new data, print the existing watermark
-            print(args.watermark)
+            print(f"NEW_WATERMARK: {args.watermark}")
 
     except Exception as e:
         print(f"Error during extraction: {e}", file=sys.stderr)

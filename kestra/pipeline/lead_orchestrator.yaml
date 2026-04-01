@@ -24,7 +24,7 @@ tasks:
     tasks:
       - id: trigger_bronze_extraction
         type: io.kestra.plugin.core.flow.Subflow
-        flowId: worker_bronze_ingestion
+        flowId: bronze-ingestion
         namespace: my.project
         wait: true
         transmitFailed: true
@@ -34,14 +34,14 @@ tasks:
 
   - id: silver_1_cleanse
     type: io.kestra.plugin.core.flow.Subflow
-    flowId: worker_silver_1_cleanse
+    flowId: silver-clean
     namespace: my.project
     wait: true
     transmitFailed: true
 
   - id: silver_2_merge
     type: io.kestra.plugin.core.flow.Subflow
-    flowId: worker_silver_2_merge
+    flowId: silver-merge
     namespace: my.project
     wait: true
     transmitFailed: true

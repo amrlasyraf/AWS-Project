@@ -1,4 +1,4 @@
-id: worker_silver_1_cleanse
+id: silver-clean
 namespace: my.project
 
 description: "Worker: Cleanse and cast data from Bronze layer into Silver 1 layer."

@@ -44,9 +44,9 @@ Project Shield-Stream uses **Kestra's internal Key-Value (KV) Store** to manage 
 ### 🧱 Bronze (The Vault)
 **Storage**: `s3://{{vars.s3_bucket}}/bronze/`  
 **Logic**: 
-- Parallel extraction from RDS siloed tables (`transactions`, `users`, `cards`).
-- Data is persisted in **Snappy-compressed Parquet** format.
-- Folders are structured using **Hive Partitioning**: `bronze/partner={id}/{table}/data.parquet`.
+- **Python-Driven Extraction**: Parallel extraction from PostgreSQL RDS siloed tables (`transactions`, `users`, `cards`) using the `extractor.py` script. This move ensures architectural consistency with the upcoming **PySpark-based** Silver layer.
+- **Data Persistence**: Extracted data is converted to **Snappy-compressed Parquet** format.
+- **Storage Strategy**: Folders are structured using **Hive Partitioning**: `bronze/partner={id}/{table}/hour={H}/data.parquet`.
 
 ### 🥈 Silver (The Big Wallet)
 **Storage**: `s3://{{vars.s3_bucket}}/silver/unified_wallet_data/`  

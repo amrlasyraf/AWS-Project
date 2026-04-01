@@ -1,4 +1,4 @@
-id: worker_bronze_ingestion
+id: bronze-ingestion
 namespace: my.project
 
 description: "Worker: Stateful Incremental CDC (Change Data Capture) with Defensive String Casting."
@@ -30,41 +30,32 @@ tasks:
         type: io.kestra.plugin.core.debug.Return
         format: "{{ outputs.get_watermark.value ?? '1970-01-01 00:00:00' }}"
 
-      - id: extract_incremental
-        type: io.kestra.plugin.jdbc.postgresql.Query
-        url: "jdbc:postgresql://{{ vars.db_host }}:5432/postgres"
-        username: postgres
-        password: "{{ vars.db_password }}"
-        # DEFENSIVE: All columns to TEXT + Incremental Filter
-        sql: >
-          {% if taskrun.value == 'transactions' %}
-            SELECT 
-              transaction_id::TEXT, user_id::TEXT, card_id::TEXT, amount::TEXT, 
-              status::TEXT, transaction_time::TEXT, updated_at::TEXT, use_chip::TEXT, 
-              merchant_id::TEXT, merchant_name::TEXT, mcc::TEXT, risk_score::TEXT
-            FROM {{ taskrun.value }}{{ inputs.suffix }}
-            WHERE updated_at > '{{ outputs.set_default_watermark.value }}'
-          {% elif taskrun.value == 'users' %}
-            SELECT 
-              user_id::TEXT, current_age::TEXT, yearly_income::TEXT, credit_score::TEXT
-            FROM {{ taskrun.value }}{{ inputs.suffix }}
-            WHERE updated_at > '{{ outputs.set_default_watermark.value }}'
-          {% elif taskrun.value == 'cards' %}
-            SELECT 
-              card_id::TEXT, user_id::TEXT, card_brand::TEXT, credit_limit::TEXT, card_on_dark_web::TEXT
-            FROM {{ taskrun.value }}{{ inputs.suffix }}
-            WHERE updated_at > '{{ outputs.set_default_watermark.value }}'
-          {% endif %}
-        fetchType: FETCH
-        store: true
+      - id: python_extract
+        type: io.kestra.plugin.scripts.python.Commands
+        namespaceFiles:
+          enabled: true
+        env:
+          DB_HOST: "{{ vars.db_host }}"
+          DB_PASSWORD: "{{ vars.db_password }}"
+          DB_USER: "{{ vars.db_user }}"
+          DB_NAME: "{{ vars.db_name }}"
+        commands:
+          - "python kestra/bronze/extractor.py --table {{ taskrun.value }}{{ inputs.suffix }} --partner {{ inputs.partner_id }} --watermark '{{ outputs.set_default_watermark.value }}'"
+        outputFiles:
+          - "extract.csv"
 
       - id: check_if_empty
         type: io.kestra.plugin.core.flow.If
-        condition: "{{ outputs.extract_incremental.size > 0 }}"
+        # Capture the value after 'NEW_WATERMARK: '
+        condition: "{{ (outputs.python_extract.stdOutValue | substringAfter('NEW_WATERMARK: ') | trim) != outputs.set_default_watermark.value }}"
         then:
+          - id: csv_to_ion
+            type: io.kestra.plugin.serdes.csv.CsvToIon
+            from: "{{ outputs.python_extract.outputFiles['extract.csv'] }}"
+          
           - id: to_parquet
             type: io.kestra.plugin.serdes.parquet.IonToParquet
-            from: "{{ outputs.extract_incremental.uri }}"
+            from: "{{ outputs.csv_to_ion.uri }}"
 
           - id: upload_to_s3
             type: io.kestra.plugin.aws.s3.Put
@@ -72,16 +63,8 @@ tasks:
             bucket: "{{ vars.s3_bucket }}"
             key: "bronze/partner={{ inputs.partner_id }}/table={{ taskrun.value }}/hour={{ vars.extraction_hour }}/data.parquet"
 
-          - id: calculate_new_watermark
-            type: io.kestra.plugin.jdbc.postgresql.Query
-            url: "jdbc:postgresql://{{ vars.db_host }}:5432/postgres"
-            username: postgres
-            password: "{{ vars.db_password }}"
-            sql: "SELECT MAX(updated_at)::TEXT as max_ts FROM {{ taskrun.value }}{{ inputs.suffix }}"
-            fetchType: FETCH_ONE
-
           - id: update_watermark
             type: io.kestra.plugin.core.kv.Set
             namespace: my.project
             key: "watermark_{{ inputs.partner_id }}_{{ taskrun.value }}"
-            value: "{{ outputs.calculate_new_watermark.row.max_ts }}"
+            value: "{{ outputs.python_extract.stdOutValue | substringAfter('NEW_WATERMARK: ') | trim }}"

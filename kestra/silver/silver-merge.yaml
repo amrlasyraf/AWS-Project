@@ -1,4 +1,4 @@
-id: worker_silver_2_merge
+id: silver-merge
 namespace: my.project
 
 description: "Worker: Join cleansed data from Silver 1 layer into the final unified 'Big Wallet' dataset."
