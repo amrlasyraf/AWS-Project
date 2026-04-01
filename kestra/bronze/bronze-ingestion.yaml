@@ -32,7 +32,6 @@ tasks:
         type: io.kestra.plugin.scripts.python.Commands
         namespaceFiles:
           enabled: true
-        fetchStdOut: true
         env:
           DB_HOST: "{{ vars.db_host }}"
           DB_PASSWORD: "{{ vars.db_password }}"
