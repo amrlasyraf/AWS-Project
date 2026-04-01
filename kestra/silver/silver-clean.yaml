@@ -24,4 +24,4 @@ errors:
   - id: alert_sns
     type: io.kestra.plugin.aws.sns.Publish
     topicArn: "{{ vars.sns_topic_arn }}"
-    from: "FAILED: {{ flow.id }} | Execution: {{ execution.id }}"
+    from: "Kestra_Failure_{{ flow.id }}"

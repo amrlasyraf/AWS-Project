@@ -32,8 +32,8 @@ tasks:
         wait: true
         transmitFailed: true
         inputs:
-          partner_id: "{{ taskrun.value.id }}"
-          suffix: "{{ taskrun.value.suffix }}"
+          partner_id: "{{ taskrun.value['id'] }}"
+          suffix: "{{ taskrun.value['suffix'] }}"
 
   - id: silver_1_cleanse
     type: io.kestra.plugin.core.flow.Subflow
@@ -53,4 +53,4 @@ errors:
   - id: alert_sns
     type: io.kestra.plugin.aws.sns.Publish
     topicArn: "{{ vars.sns_topic_arn }}"
-    from: "FAILED: {{ flow.id }} | Execution: {{ execution.id }}"
+    from: "Kestra_Failure_{{ flow.id }}"

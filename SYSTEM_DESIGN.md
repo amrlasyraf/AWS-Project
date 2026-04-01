@@ -74,10 +74,10 @@ To ensure high availability and rapid incident response, Project Shield-Stream i
 - **Scope**: Every flow (Master and Worker) contains a root-level `errors` block.
 - **Mechanism**: Utilizes `io.kestra.plugin.aws.sns.Publish` to push failure notifications to a centralized SNS Topic (`arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts`).
 - **Reliability**:
-    - **Looping**: Partner loops use the `| json` filter (e.g., `values: "{{ vars.active_partners | json }}"`) to ensure items are correctly parsed as JSON objects for downstream task access.
+    - **Looping**: Partner loops use the `| json` filter (e.g., `values: "{{ vars.active_partners | json }}"`) combined with bracket notation (e.g., `taskrun.value['id']`) to ensure robust object property access.
     - **Localization**: The SNS Topic ARN variable is localized within each flow's `variables` block.
-- **Plugin Syntax**: The production `io.kestra.plugin.aws.sns.Publish` plugin uses the `from` field for the entire alert payload.
-- **Alert Format**: Alerts follow a simplified format: `FAILED: {{ flow.id }} | Execution: {{ execution.id }}` to avoid variable resolution errors in the current environment.
+- **Plugin Syntax**: The production `io.kestra.plugin.aws.sns.Publish` plugin uses the `from` field as a URL-safe identifier for the failure event.
+- **Alert Format**: Failure identifiers follow a strictly **URL-safe format** (e.g., `Kestra_Failure_{{ flow.id }}`) with no spaces or special characters to prevent internal plugin processing errors.
 
 ---
 
