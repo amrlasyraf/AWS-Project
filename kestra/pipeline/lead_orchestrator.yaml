@@ -50,4 +50,4 @@ errors:
     type: io.kestra.plugin.aws.sns.Publish
     topicArn: "{{ vars.sns_topic_arn }}"
     from:
-      - "FAILED: Kestra Flow {{ flow.id }}. Execution: {{ execution.id }}"
+      message: "FAILED: Kestra Flow {{ flow.id }}. Execution: {{ execution.id }}"
