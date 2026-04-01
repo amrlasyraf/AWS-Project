@@ -76,8 +76,8 @@ To ensure high availability and rapid incident response, Project Shield-Stream i
 - **Reliability**:
     - **Looping**: Partner loops use a simplified **array of strings** (e.g., `["PARTNER_A", "PARTNER_B"]`) to eliminate object parsing overhead. Conditional logic (Ternary operators) is used to map partner-specific metadata like table suffixes.
     - **Localization**: The SNS Topic ARN variable is localized within each flow's `variables` block.
-- **Plugin Syntax**: The production `io.kestra.plugin.aws.sns.Publish` plugin uses the `from` field as a strictly URL-safe identifier and the `data` field for the failure event payload.
-- **Alert Format**: Failure identifiers use a static, alphanumeric string (e.g., `KestraAlert`) in the `from` field to bypass "URI Scheme" and "Illegal character" errors. The failing Flow ID is carried in the `data` field.
+- **Plugin Syntax**: The production `io.kestra.plugin.aws.sns.Publish` plugin requires plain text messages to be formatted as an **array/list** within the `from` property to avoid "URI Scheme" and "Illegal character" validation errors.
+- **Alert Format**: Failure alerts follow the array syntax: `from: ["FAILED: {{ flow.id }}. Execution: {{ execution.id }}"]`. All other message-carrying fields (subject, message, body, data) are omitted for compatibility.
 
 ---
 

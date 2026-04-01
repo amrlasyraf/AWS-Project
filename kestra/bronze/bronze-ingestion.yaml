@@ -72,5 +72,5 @@ errors:
   - id: alert_sns
     type: io.kestra.plugin.aws.sns.Publish
     topicArn: "{{ vars.sns_topic_arn }}"
-    from: "KestraAlert"
-    data: "Flow_Failed_{{ flow.id }}"
+    from:
+      - "FAILED: Kestra Flow {{ flow.id }}. Execution: {{ execution.id }}"
