@@ -71,4 +71,4 @@ errors:
     type: io.kestra.plugin.aws.sns.Publish
     topicArn: "{{ vars.sns_topic_arn }}"
     from: "Kestra Alert: Bronze Ingestion Failed"
-    body: "Execution {{ execution.id }} failed for partner {{ inputs.partner_id }}. Check logs at {{ execution.url }}"
+    data: "Execution {{ execution.id }} failed for partner {{ inputs.partner_id }}. Check logs at {{ execution.url }}"
