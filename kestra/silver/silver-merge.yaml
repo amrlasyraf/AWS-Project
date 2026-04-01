@@ -1,18 +1,36 @@
 id: silver-merge
 namespace: my.project
 
-description: "Worker: Join cleansed data from Silver 1 layer into the final unified 'Big Wallet' dataset."
+description: "Worker: Partner-Union-heavy unification across all partners."
 
 tasks:
-  - id: merge_transformation
+  - id: unify_partners
     type: io.kestra.plugin.jdbc.duckdb.Query
     sql: |
-      -- REASONING: This final subflow executes the joins between the:
-      -- 1. Cleansed Transactions table.
-      -- 2. Cleansed Users dimensional table.
-      -- 3. Cleansed Cards dimensional table.
+      -- Redesign: UNION ALL across all partners to create unified entities.
+      -- Cross-Partner Unification logic:
       
-      -- Output: Unified "Big Wallet" dataset stored in S3 for Athena/Power BI analysis.
-      -- This layer ensures all partner data is joined using (user_id, partner_id) and (card_id, partner_id).
-      
-      -- Place for DuckDB logic following the final Medallion merge...
+      -- Load S3 credentials and extensions
+      INSTALL httpfs;
+      LOAD httpfs;
+      SET s3_region = '{{ vars.s3_region }}';
+      SET s3_access_key_id = '{{ vars.s3_access_key }}';
+      SET s3_secret_access_key = '{{ vars.s3_secret_key }}';
+
+      -- Unify Transactions
+      COPY (
+          SELECT *, partner AS partner_id 
+          FROM read_parquet('s3://{{ vars.s3_bucket }}/silver/cleansed/partner=*/table=transactions/*.parquet', hive_partitioning = 1)
+      ) TO 's3://{{ vars.s3_bucket }}/silver/unified/unified_transactions.parquet' (FORMAT 'PARQUET', COMPRESSION 'SNAPPY');
+
+      -- Unify Users
+      COPY (
+          SELECT *, partner AS partner_id 
+          FROM read_parquet('s3://{{ vars.s3_bucket }}/silver/cleansed/partner=*/table=users/*.parquet', hive_partitioning = 1)
+      ) TO 's3://{{ vars.s3_bucket }}/silver/unified/unified_users.parquet' (FORMAT 'PARQUET', COMPRESSION 'SNAPPY');
+
+      -- Unify Cards
+      COPY (
+          SELECT *, partner AS partner_id 
+          FROM read_parquet('s3://{{ vars.s3_bucket }}/silver/cleansed/partner=*/table=cards/*.parquet', hive_partitioning = 1)
+      ) TO 's3://{{ vars.s3_bucket }}/silver/unified/unified_cards.parquet' (FORMAT 'PARQUET', COMPRESSION 'SNAPPY');

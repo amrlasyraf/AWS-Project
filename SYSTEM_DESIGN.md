@@ -50,10 +50,13 @@ Project Shield-Stream uses **Kestra's internal Key-Value (KV) Store** to manage 
 - **Storage Strategy**: Folders are structured using **Hive Partitioning**: `bronze/partner={id}/{table}/hour={H}/data.parquet`.
 
 ### 🥈 Silver (The Big Wallet)
-**Storage**: `s3://{{vars.s3_bucket}}/silver/unified_wallet_data/`  
+**Storage**: `s3://{{vars.s3_bucket}}/silver/unified/`  
 **Logic**:
-- **Unified Merge**: Performs a `UNION ALL` across all discovered partner partitions via DuckDB.
-- **Denormalization**: Joins transaction data with `users` and `cards` dimension tables using both `user_id` and the metadata-injected `partner` column.
+- **Cross-Partner Unification**: Performs a `UNION ALL` across all discovered partner partitions via DuckDB to create three distinct unified entities:
+    - `unified_transactions`
+    - `unified_users`
+    - `unified_cards`
+- **Metadata Injection**: Injects an explicit `partner_id` column during the unification process to ensure global traceability across the medallion flow.
 - **Business Enrichment**:
     - **Currency Normalization**: All transaction amounts are converted to MYR (Exchange Rate: 4.70).
     - **Latency Profiling**: Calculates `processing_latency` (in seconds) between `transaction_time` and `updated_at` to detect gateway delays.
