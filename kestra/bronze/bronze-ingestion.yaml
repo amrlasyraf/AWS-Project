@@ -71,6 +71,9 @@ tasks:
 errors:
   - id: alert_sns
     type: io.kestra.plugin.aws.sns.Publish
+    accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}"
+    secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
+    region: "ap-southeast-1"
     topicArn: "{{ vars.sns_topic_arn }}"
     from:
       subject: "FAILED: {{ flow.id }}"
