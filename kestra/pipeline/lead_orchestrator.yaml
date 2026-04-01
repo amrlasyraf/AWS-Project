@@ -22,7 +22,7 @@ variables:
 tasks:
   - id: parallel_bronze_layer
     type: io.kestra.plugin.core.flow.ForEach
-    values: "{{ vars.active_partners }}"
+    values: "{{ vars.active_partners | json }}"
     concurrencyLimit: 2
     tasks:
       - id: trigger_bronze_extraction
@@ -53,4 +53,4 @@ errors:
   - id: alert_sns
     type: io.kestra.plugin.aws.sns.Publish
     topicArn: "{{ vars.sns_topic_arn }}"
-    from: "FAILED: Kestra Flow {{ flow.id }}. Check logs at: {{ execution.url }}"
+    from: "FAILED: {{ flow.id }} | Execution: {{ execution.id }}"
