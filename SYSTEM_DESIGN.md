@@ -18,7 +18,7 @@ Project Shield-Stream implements a **Metadata-Driven** ingestion architecture, m
 > [!NOTE]
 > The original monolithic `wallet_data_pipeline.yaml` has been officially deprecated and removed from the repository. All orchestration is now handled via the Enterprise Master-Worker (Subflow) pattern.
 
-### 🔌 Enterprise Orchestration (Master-Worker Pattern)
+### 🔌 Enterprise Orchestration (**Status**: `Verified`)
 To ensure robustness and scalability, the pipeline follows the **Master-Worker (Subflow)** orchestration pattern using Kestra:
 - **Lead Orchestrator**: Acts as the central controller, managing active partner lists and coordinating execution across workers.
 - **Worker Bronze**: Parametrized flow for siloed partner data extraction into S3.
@@ -42,7 +42,7 @@ Project Shield-Stream uses **Kestra's internal Key-Value (KV) Store** to manage 
 ## 🔄 The Medallion Flow
 
 ### 🧱 Bronze (The Vault)
-**Status**: `Operational - Python/Standardized`  
+**Status**: `In-Progress`  
 **Storage**: `s3://{{vars.s3_bucket}}/bronze/`  
 **Logic**: 
 - **Python-Driven Extraction**: Parallel extraction from PostgreSQL RDS siloed tables (`transactions`, `users`, `cards`) using the standardized local pathing: `python kestra/bronze/extractor.py`. This ensures architectural consistency with the modular repository structure.
