@@ -51,4 +51,4 @@ errors:
     type: io.kestra.plugin.aws.sns.Publish
     topicArn: "{{ vars.sns_topic_arn }}"
     from: "FAILED: Kestra Flow {{ flow.id }} [{{ execution.id }}]"
-    message: "The flow {{ flow.id }} failed in namespace {{ flow.namespace }}. Check logs at: {{ execution.url }}"
+    body: "The flow {{ flow.id }} failed in namespace {{ flow.namespace }}. Check logs at: {{ execution.url }}"
