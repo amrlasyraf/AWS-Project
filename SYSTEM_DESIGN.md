@@ -42,9 +42,10 @@ Project Shield-Stream uses **Kestra's internal Key-Value (KV) Store** to manage 
 ## 🔄 The Medallion Flow
 
 ### 🧱 Bronze (The Vault)
+**Status**: `Operational - Python/Standardized`  
 **Storage**: `s3://{{vars.s3_bucket}}/bronze/`  
 **Logic**: 
-- **Python-Driven Extraction**: Parallel extraction from PostgreSQL RDS siloed tables (`transactions`, `users`, `cards`) using the `extractor.py` script. This move ensures architectural consistency with the upcoming **PySpark-based** Silver layer.
+- **Python-Driven Extraction**: Parallel extraction from PostgreSQL RDS siloed tables (`transactions`, `users`, `cards`) using the standardized local pathing: `python kestra/bronze/extractor.py`. This ensures architectural consistency with the modular repository structure.
 - **Data Persistence**: Extracted data is converted to **Snappy-compressed Parquet** format.
 - **Storage Strategy**: Folders are structured using **Hive Partitioning**: `bronze/partner={id}/{table}/hour={H}/data.parquet`.
 
