@@ -70,5 +70,5 @@ errors:
   - id: alert_sns
     type: io.kestra.plugin.aws.sns.Publish
     topicArn: "{{ vars.sns_topic_arn }}"
-    subject: "FAILED: Kestra Flow {{ flow.id }} [{{ execution.id }}]"
-    message: "The flow {{ flow.id }} failed in namespace {{ flow.namespace }}. Check logs at: {{ execution.url }}"
+    subject: "Kestra Alert: Bronze Ingestion Failed"
+    message: "Execution {{ execution.id }} failed for partner {{ inputs.partner_id }}. Check logs at {{ execution.url }}"

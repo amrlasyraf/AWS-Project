@@ -9,6 +9,9 @@ tasks:
     password: "{{ secret('GITHUB_TOKEN') }}"
     namespace: my.project
     gitDirectory: kestra/
+variables:
+  sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
+
 triggers:
   - id: auto_sync
     type: io.kestra.plugin.core.trigger.Schedule
