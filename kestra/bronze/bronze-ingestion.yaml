@@ -26,10 +26,6 @@ tasks:
         # Correct property for Kestra 0.15+ (kv Get)
         errorOnMissing: false
 
-      - id: set_default_watermark
-        type: io.kestra.plugin.core.debug.Return
-        format: "{{ outputs.get_watermark.value ?? '1970-01-01 00:00:00' }}"
-
       - id: python_extract
         type: io.kestra.plugin.scripts.python.Commands
         namespaceFiles:
@@ -40,14 +36,14 @@ tasks:
           DB_USER: "{{ vars.db_user }}"
           DB_NAME: "{{ vars.db_name }}"
         commands:
-          - "python kestra/bronze/extractor.py --table {{ taskrun.value }}{{ inputs.suffix }} --partner {{ inputs.partner_id }} --watermark '{{ outputs.set_default_watermark.value }}'"
+          - "python kestra/bronze/extractor.py --table {{ taskrun.value }} --partner {{ inputs.partner_id }} --watermark \"{{ outputs.get_watermark.value ?? '1970-01-01 00:00:00' }}\""
         outputFiles:
           - "extract.csv"
 
       - id: check_if_empty
         type: io.kestra.plugin.core.flow.If
-        # Capture the value after 'NEW_WATERMARK: '
-        condition: "{{ (outputs.python_extract.stdOutValue | substringAfter('NEW_WATERMARK: ') | trim) != outputs.set_default_watermark.value }}"
+        # Capture the value after 'NEW_WATERMARK: ' and compare to the (potentially defaulted) input watermark
+        condition: "{{ (outputs.python_extract.stdOutValue | substringAfter('NEW_WATERMARK: ') | trim) != (outputs.get_watermark.value ?? '1970-01-01 00:00:00') }}"
         then:
           - id: csv_to_ion
             type: io.kestra.plugin.serdes.csv.CsvToIon
