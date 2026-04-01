@@ -6,8 +6,6 @@ description: "Worker: Cleanse and cast data from Bronze layer into Silver 1 laye
 variables:
   # Monitoring ARN
   sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
-  aws_access_key_id: "PASTE_KEY_HERE"
-  aws_secret_access_key: "PASTE_SECRET_HERE"
 
 tasks:
   - id: cleanse_transformation
@@ -25,8 +23,8 @@ tasks:
 errors:
   - id: alert_sns
     type: io.kestra.plugin.aws.sns.Publish
-    accessKeyId: "{{ vars.aws_access_key_id }}"
-    secretKeyId: "{{ vars.aws_secret_access_key }}"
+    accessKeyId: "{{ kv('AWS_ACCESS_KEY_ID') }}"
+    secretKeyId: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
     region: "ap-southeast-1"
     topicArn: "{{ vars.sns_topic_arn }}"
     from:
