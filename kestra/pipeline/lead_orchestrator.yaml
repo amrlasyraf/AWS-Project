@@ -13,16 +13,12 @@ variables:
   sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
   
   # Metadata config for partners
-  active_partners:
-    - id: PARTNER_A
-      suffix: ""
-    - id: PARTNER_B
-      suffix: "_partner_b"
+  active_partners: ["PARTNER_A", "PARTNER_B"]
 
 tasks:
   - id: parallel_bronze_layer
     type: io.kestra.plugin.core.flow.ForEach
-    values: "{{ vars.active_partners | json }}"
+    values: "{{ vars.active_partners }}"
     concurrencyLimit: 2
     tasks:
       - id: trigger_bronze_extraction
@@ -32,8 +28,8 @@ tasks:
         wait: true
         transmitFailed: true
         inputs:
-          partner_id: "{{ taskrun.value['id'] }}"
-          suffix: "{{ taskrun.value['suffix'] }}"
+          partner_id: "{{ taskrun.value }}"
+          suffix: "{{ taskrun.value == 'PARTNER_B' ? '_partner_b' : '' }}"
 
   - id: silver_1_cleanse
     type: io.kestra.plugin.core.flow.Subflow
@@ -53,4 +49,5 @@ errors:
   - id: alert_sns
     type: io.kestra.plugin.aws.sns.Publish
     topicArn: "{{ vars.sns_topic_arn }}"
-    from: "Kestra_Failure_{{ flow.id }}"
+    from: "KestraAlert"
+    data: "Flow_Failed_{{ flow.id }}"
