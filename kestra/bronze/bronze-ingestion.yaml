@@ -56,7 +56,10 @@ tasks:
             from: "{{ outputs.csv_to_ion.uri }}"
 
           - id: upload_to_s3
-            type: io.kestra.plugin.aws.s3.Put
+            type: io.kestra.plugin.aws.s3.Upload
+            accessKeyId: "{{ kv('AWS_ACCESS_KEY_ID') }}"
+            secretKeyId: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
+            region: "ap-southeast-1"
             from: "{{ outputs.to_parquet.uri }}"
             bucket: "{{ vars.s3_bucket }}"
             key: "bronze/partner={{ inputs.partner_id }}/table={{ taskrun.value }}/hour={{ vars.extraction_hour }}/data.parquet"
