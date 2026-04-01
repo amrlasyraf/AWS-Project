@@ -32,11 +32,12 @@ tasks:
         type: io.kestra.plugin.scripts.python.Commands
         namespaceFiles:
           enabled: true
+        beforeCommands:
+          - "uv pip install boto3"
         env:
-          DB_HOST: "{{ vars.db_host }}"
-          DB_PASSWORD: "{{ vars.db_password }}"
-          DB_USER: "{{ vars.db_user }}"
-          DB_NAME: "{{ vars.db_name }}"
+          AWS_ACCESS_KEY_ID: "{{ kv('AWS_ACCESS_KEY_ID') }}"
+          AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
+          AWS_DEFAULT_REGION: "ap-southeast-1"
         commands:
           - "python kestra/bronze/extractor.py --table {{ taskrun.value }} --partner {{ inputs.partner_id }} --watermark \"{{ outputs.get_watermark.value ?? '1970-01-01 00:00:00' }}\""
         outputFiles:
