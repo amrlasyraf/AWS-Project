@@ -11,6 +11,8 @@ triggers:
 variables:
   # Monitoring ARN
   sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
+  aws_access_key_id: "PASTE_KEY_HERE"
+  aws_secret_access_key: "PASTE_SECRET_HERE"
   
   # Metadata config for partners
   active_partners: ["PARTNER_A", "PARTNER_B"]
@@ -48,8 +50,8 @@ tasks:
 errors:
   - id: alert_sns
     type: io.kestra.plugin.aws.sns.Publish
-    accessKeyId: "{{ secret('AWS_ACCESS_KEY_ID') }}"
-    secretKeyId: "{{ secret('AWS_SECRET_ACCESS_KEY') }}"
+    accessKeyId: "{{ vars.aws_access_key_id }}"
+    secretKeyId: "{{ vars.aws_secret_access_key }}"
     region: "ap-southeast-1"
     topicArn: "{{ vars.sns_topic_arn }}"
     from:
