@@ -34,7 +34,7 @@ tasks:
           enabled: true
         beforeCommands:
           - pip install uv
-          - uv pip install --system pandas pyarrow fastparquet boto3
+          - uv pip install --system pandas pyarrow fastparquet boto3 psycopg2-binary
         env:
           AWS_ACCESS_KEY_ID: "{{ kv('AWS_ACCESS_KEY_ID') }}"
           AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
