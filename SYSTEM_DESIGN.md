@@ -37,6 +37,25 @@ Project Shield-Stream uses **Kestra's internal Key-Value (KV) Store** to manage 
 - **Resilience**: This ensures that even if a scheduled execution is skipped or fails, the next successful run will pick up from the exact last timestamp successfully persisted to S3.
 - **Idempotency**: By updating the watermark **only after** a successful S3 upload, we guarantee zero data loss without requiring complex time-range overhead in the master orchestrator.
 
+### ⚙️ Pebble Templating: `parents` Array Index inside Nested Flowables
+
+> [!IMPORTANT]
+> **Kestra-Specific Gotcha**: When a task is nested inside an `If` flowable that is itself nested inside a `ForEach` flowable, the Pebble expression `taskrun.value` is **not directly accessible** from within the `If`'s `then` block. The correct syntax to retrieve the inherited loop variable is **`parents[0].taskrun.value`** — NOT `parents[1].taskrun.value`.
+
+**Explanation of the `parents` array:**
+- `parents[0]` → The **immediate parent** task/flowable. When inside an `If` block nested in `ForEach`, this resolves to the `ForEach` iteration context, giving you the current loop value (e.g., `"transactions"`, `"users"`, `"cards"`).
+- `parents[1]` → The next ancestor up the chain. In a single-level `ForEach → If` nesting, index `1` is **out of bounds** and will cause a runtime error.
+
+**Rule**: Count the levels of nesting from the perspective of the task itself. A task directly inside an `If` that is directly inside a `ForEach` is **one level deep** — use `parents[0]`.
+
+**Applied in `bronze-ingestion.yaml`:**
+```yaml
+# Correct — resolves the ForEach loop value from within the If.then block
+from:  "{{ outputs.python_extract[parents[0].taskrun.value].outputFiles['extract.parquet'] }}"
+key:   "bronze/partner={{ inputs.partner_id }}/table={{ parents[0].taskrun.value }}/..."
+value: "{{ outputs.python_extract[parents[0].taskrun.value].vars.new_watermark }}"
+```
+
 ---
 
 ## 🔐 Secure Credential Management (**Status**: `Production-Ready`)

@@ -57,15 +57,15 @@ tasks:
             accessKeyId: "{{ kv('AWS_ACCESS_KEY_ID') }}"
             secretKeyId: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
             region: "ap-southeast-1"
-            from: "{{ outputs.python_extract[parents[1].taskrun.value].outputFiles['extract.parquet'] }}"
+            from: "{{ outputs.python_extract[parents[0].taskrun.value].outputFiles['extract.parquet'] }}"
             bucket: "{{ vars.s3_bucket }}"
-            key: "bronze/partner={{ inputs.partner_id }}/table={{ parents[1].taskrun.value }}/year={{ vars.year }}/month={{ vars.month }}/day={{ vars.day }}/hour={{ vars.hour }}/data.parquet"
+            key: "bronze/partner={{ inputs.partner_id }}/table={{ parents[0].taskrun.value }}/year={{ vars.year }}/month={{ vars.month }}/day={{ vars.day }}/hour={{ vars.hour }}/data.parquet"
 
           - id: update_watermark
             type: io.kestra.plugin.core.kv.Set
             namespace: ewallet.layer
-            key: "watermark_{{ inputs.partner_id }}_{{ parents[1].taskrun.value }}"
-            value: "{{ outputs.python_extract[parents[1].taskrun.value].vars.new_watermark }}"
+            key: "watermark_{{ inputs.partner_id }}_{{ parents[0].taskrun.value }}"
+            value: "{{ outputs.python_extract[parents[0].taskrun.value].vars.new_watermark }}"
 
 errors:
   - id: alert_sns
