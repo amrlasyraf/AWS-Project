@@ -6,7 +6,7 @@ description: "Worker: Stateful Incremental CDC (Change Data Capture) with Defens
 inputs:
   - id: partner_id
     type: STRING
-    description: "The unique identifier for the partner (e.g. PARTNER_A)"
+    description: "The unique identifier for the partner (e.g. partner_a)"
   - id: suffix
     type: STRING
     description: "The table suffix for this partner (e.g. _partner_b)"
@@ -23,8 +23,8 @@ tasks:
       - id: get_watermark
         type: io.kestra.plugin.core.kv.Get
         namespace: ewallet.layer
-        key: "watermark_{{ inputs.partner_id }}_{{ taskrun.value }}"
-        # Correct property for Kestra 0.15+ (kv Get)
+        # NORMALIZED: Ensures KV lookup is always lowercase
+        key: "watermark_{{ inputs.partner_id | lower }}_{{ taskrun.value }}"
         errorOnMissing: false
 
       - id: python_extract
@@ -39,13 +39,13 @@ tasks:
           AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
           AWS_DEFAULT_REGION: "ap-southeast-1"
         commands:
-          - "python bronze/extractor.py --table {{ taskrun.value }} --partner {{ inputs.partner_id }} --watermark \"{{ outputs.get_watermark[taskrun.value].value ?? '1970-01-01 00:00:00' }}\""
+          # NORMALIZED: Passes lowercase partner to Python script
+          - "python bronze/extractor.py --table {{ taskrun.value }} --partner {{ inputs.partner_id | lower }} --watermark \"{{ outputs.get_watermark[taskrun.value].value ?? '1970-01-01 00:00:00' }}\""
         outputFiles:
           - "extract.parquet"
 
       - id: check_if_empty
         type: io.kestra.plugin.core.flow.If
-        # Iteration-aware condition indexing
         condition: "{{ outputs.python_extract[taskrun.value].vars is defined and outputs.python_extract[taskrun.value].vars.new_watermark != (outputs.get_watermark[taskrun.value].value ?? '1970-01-01 00:00:00') }}"
         then:
           - id: upload_to_s3
@@ -55,12 +55,14 @@ tasks:
             region: "ap-southeast-1"
             from: "{{ outputs.python_extract[parents[0].taskrun.value].outputFiles['extract.parquet'] }}"
             bucket: "{{ vars.s3_bucket }}"
+            # NORMALIZED: Forces lowercase S3 folder structure
             key: "bronze/partner={{ inputs.partner_id | lower }}/table={{ parents[0].taskrun.value }}/{{ now() | date('yyyy') }}/{{ now() | date('MM') }}/{{ now() | date('dd') }}/data.parquet"
 
           - id: update_watermark
             type: io.kestra.plugin.core.kv.Set
             namespace: ewallet.layer
-            key: "watermark_{{ inputs.partner_id }}_{{ parents[0].taskrun.value }}"
+            # NORMALIZED: Saves watermark to the lowercase key
+            key: "watermark_{{ inputs.partner_id | lower }}_{{ parents[0].taskrun.value }}"
             value: "{{ outputs.python_extract[parents[0].taskrun.value].vars.new_watermark }}"
 
 errors:
