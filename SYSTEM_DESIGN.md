@@ -107,9 +107,11 @@ To meet enterprise security standards for Project Shield-Stream, database creden
 > This guarantees the timestamp is resolved fresh at task runtime with no intermediate variable indirection.
 
 ### 🥈 Silver (The Big Wallet)
-**Storage**: `s3://{{vars.s3_bucket}}/silver/unified/`  
+**Storage**: `s3://{{vars.s3_bucket}}/silver/tables/`  
 **Logic**:
+- **Unified Tech Stack**: Transitions to a Python, DuckDB, and Apache Iceberg stack with AWS Glue as the catalog for deduplication and complex transform operations.
 - **Unified Global View**: Joins data from all different partners into a single "Big Wallet" for easier analysis.
+- **Event-Time Partitioning**: Organizes data along event-time dimensions (e.g. transaction_time), facilitating easier time-travel queries and partitioned analytics compared to simple ingestion-time processing.
 - **Automated Labeling**: Automatically adds tracking labels to every record so we always know exactly which partner provided the data.
 - **Business Ready Features**:
     - **Global Currency**: Automatically converts all amounts into a single currency (MYR) for consistent reporting.

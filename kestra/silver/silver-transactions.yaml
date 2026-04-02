@@ -1,0 +1,19 @@
+id: silver-transactions
+namespace: ewallet.layer
+
+description: "Silver Layer: Merge Deduplicated and Transformed Transactions into Iceberg"
+
+tasks:
+  - id: run_silver_transactions
+    type: io.kestra.plugin.scripts.python.Commands
+    namespaceFiles:
+      enabled: true
+    beforeCommands:
+      - pip install --quiet uv
+      - uv pip install --system --quiet duckdb "pyiceberg[glue,s3]" pyarrow
+    env:
+      AWS_ACCESS_KEY_ID: "{{ kv('AWS_ACCESS_KEY_ID') }}"
+      AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
+      AWS_DEFAULT_REGION: "ap-southeast-1"
+    commands:
+      - python scripts/silver_transactions.py
