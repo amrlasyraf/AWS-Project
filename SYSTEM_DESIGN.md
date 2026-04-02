@@ -88,6 +88,14 @@ To meet enterprise security standards for Project Shield-Stream, database creden
 > Date segments use **standard directory paths** (e.g., `/2026/04/02/`) rather than Hive-style key=value prefixes (e.g., `year=2026/month=04/day=02/`). This ensures compatibility with generic S3 tooling and avoids requiring Hive partition-awareness in downstream consumers. The `partner=` prefix is retained as a logical partition anchor for Athena `MSCK REPAIR TABLE` operations.  
 > Hourly sub-partitions were deliberately removed. Multiple daily runs overwrite a single `data.parquet` per day rather than scattering data across hourly objects, keeping downstream Athena scans efficient.
 
+> [!IMPORTANT]
+> **Pebble Templating — Inline Date Functions, Not `vars.*` Wrappers**  
+> The `year`, `month`, and `day` variables have been **removed** from the `variables:` block. Storing `{{ now() | date('...') }}` inside a `vars.*` entry causes a **recursive rendering issue**: Kestra evaluates the variable reference first and may resolve it to an empty or stale string before the inner `now()` call is executed. The correct pattern is to call the Pebble date function **directly** inside the property string that needs it:  
+> ```yaml
+> key: "bronze/partner={{ inputs.partner_id }}/table={{ parents[0].taskrun.value }}/{{ now() | date('yyyy') }}/{{ now() | date('MM') }}/{{ now() | date('dd') }}/data.parquet"
+> ```  
+> This guarantees the timestamp is resolved fresh at task runtime with no intermediate variable indirection.
+
 ### 🥈 Silver (The Big Wallet)
 **Storage**: `s3://{{vars.s3_bucket}}/silver/unified/`  
 **Logic**:

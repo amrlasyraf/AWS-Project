@@ -14,9 +14,6 @@ inputs:
 variables:
   sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
   s3_bucket: "ewallet-storage"
-  year: "{{ now() | date('yyyy') }}"
-  month: "{{ now() | date('MM') }}"
-  day: "{{ now() | date('dd') }}"
 
 tasks:
   - id: extraction_loop
@@ -58,7 +55,7 @@ tasks:
             region: "ap-southeast-1"
             from: "{{ outputs.python_extract[parents[0].taskrun.value].outputFiles['extract.parquet'] }}"
             bucket: "{{ vars.s3_bucket }}"
-            key: "bronze/partner={{ inputs.partner_id }}/table={{ parents[0].taskrun.value }}/{{ vars.year }}/{{ vars.month }}/{{ vars.day }}/data.parquet"
+            key: "bronze/partner={{ inputs.partner_id }}/table={{ parents[0].taskrun.value }}/{{ now() | date('yyyy') }}/{{ now() | date('MM') }}/{{ now() | date('dd') }}/data.parquet"
 
           - id: update_watermark
             type: io.kestra.plugin.core.kv.Set
