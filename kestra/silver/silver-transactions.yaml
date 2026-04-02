@@ -30,5 +30,5 @@ errors:
     topicArn: "{{ vars.sns_topic_arn }}"
     from:
       subject: "FAILED: {{ flow.id }}"
-      # FIX: Use 'message' key inside data instead of a raw string
-      message: "Execution {{ execution.id }} failed in the Silver Layer."
+      # FIX: Use 'data' as a direct string, not a nested list/object
+      data: "Execution {{ execution.id }} failed in the Silver Layer."
