@@ -13,17 +13,15 @@ tasks:
       enabled: true
     beforeCommands:
       - pip install --quiet uv
-      - |
-        uv pip install --system --quiet --only-binary :all: \
-        duckdb \
-        pyarrow \
-        "pyiceberg[glue,s3]"
+      # FIX: Pinning duckdb to 1.1.3 avoids the source build/compiler crash
+      - "uv pip install --system --quiet duckdb==1.1.3 pyarrow 'pyiceberg[glue,s3]'"
     env:
       AWS_ACCESS_KEY_ID: "{{ kv('AWS_ACCESS_KEY_ID') }}"
       AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
       AWS_DEFAULT_REGION: "ap-southeast-1"
     commands:
-      - python scripts/silver_users.py
+      # If the file is at the root of your namespace files, remove 'scripts/'
+      - python silver_users.py
 
 errors:
   - id: alert_sns
@@ -34,5 +32,4 @@ errors:
     topicArn: "{{ vars.sns_topic_arn }}"
     from:
       subject: "FAILED: {{ flow.id }}"
-      # FIX: Use 'data' as a direct string, not a nested list/object
       data: "Execution {{ execution.id }} failed in the Silver Layer."
