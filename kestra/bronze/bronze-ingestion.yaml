@@ -35,8 +35,8 @@ tasks:
         namespaceFiles:
           enabled: true
         beforeCommands:
-          - pip install uv
-          - uv pip install --system pandas pyarrow fastparquet boto3 psycopg2-binary
+          - pip install --quiet uv
+          - uv pip install --system --quiet pandas pyarrow fastparquet boto3 psycopg2-binary
         env:
           AWS_ACCESS_KEY_ID: "{{ kv('AWS_ACCESS_KEY_ID') }}"
           AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
@@ -58,7 +58,7 @@ tasks:
             region: "ap-southeast-1"
             from: "{{ outputs.python_extract[parents[0].taskrun.value].outputFiles['extract.parquet'] }}"
             bucket: "{{ vars.s3_bucket }}"
-            key: "bronze/partner={{ inputs.partner_id }}/table={{ parents[0].taskrun.value }}/year={{ vars.year }}/month={{ vars.month }}/day={{ vars.day }}/data.parquet"
+            key: "bronze/partner={{ inputs.partner_id }}/table={{ parents[0].taskrun.value }}/{{ vars.year }}/{{ vars.month }}/{{ vars.day }}/data.parquet"
 
           - id: update_watermark
             type: io.kestra.plugin.core.kv.Set

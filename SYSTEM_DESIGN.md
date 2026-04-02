@@ -82,10 +82,11 @@ To meet enterprise security standards for Project Shield-Stream, database creden
 - **Smart Folder Organization**: Automatically sorts data into folders by **Year**, **Month**, and **Day** for easy retrieval. Partitioning is intentionally set to a **daily grain** — hourly partitioning was evaluated and removed to prevent excessive small-file generation, which degrades Athena query performance and increases S3 API costs.
 
 > [!NOTE]
-> **S3 Partitioning Strategy — Daily Grain**  
+> **S3 Partitioning Strategy — Daily Grain, Plain Directory Paths**  
 > Bronze files are stored at the following path structure:  
-> `s3://ewallet-storage/bronze/partner={PARTNER}/table={TABLE}/year={YYYY}/month={MM}/day={DD}/data.parquet`  
-> Hourly sub-partitions (`/hour={HH}/`) were deliberately removed. Running the pipeline multiple times in a day will overwrite the day's `data.parquet` file rather than scatter data across dozens of hourly objects, keeping downstream Athena scans efficient.
+> `s3://ewallet-storage/bronze/partner={PARTNER}/table={TABLE}/{YYYY}/{MM}/{DD}/data.parquet`  
+> Date segments use **standard directory paths** (e.g., `/2026/04/02/`) rather than Hive-style key=value prefixes (e.g., `year=2026/month=04/day=02/`). This ensures compatibility with generic S3 tooling and avoids requiring Hive partition-awareness in downstream consumers. The `partner=` prefix is retained as a logical partition anchor for Athena `MSCK REPAIR TABLE` operations.  
+> Hourly sub-partitions were deliberately removed. Multiple daily runs overwrite a single `data.parquet` per day rather than scattering data across hourly objects, keeping downstream Athena scans efficient.
 
 ### 🥈 Silver (The Big Wallet)
 **Storage**: `s3://{{vars.s3_bucket}}/silver/unified/`  
