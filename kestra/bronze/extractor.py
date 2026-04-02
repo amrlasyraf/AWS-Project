@@ -43,12 +43,21 @@ def main():
             port=db_port
         )
         
-        # Execute extraction query as requested
-        # Note: Casting IDs to TEXT for consistency
-        query = f"SELECT *, transaction_id::TEXT, user_id::TEXT FROM {args.table} WHERE updated_at > '{args.watermark}'"
+        # Execute extraction query
+        # Cast ID columns to TEXT inline to avoid duplicate columns from SELECT *
+        query = (
+            f"SELECT * FROM ("
+            f"  SELECT *, transaction_id::TEXT AS transaction_id, user_id::TEXT AS user_id"
+            f"  FROM {args.table}"
+            f"  WHERE updated_at > '{args.watermark}'"
+            f") sub"
+        )
         
         # Load into Pandas for Parquet conversion
         df = pd.read_sql_query(query, conn)
+
+        # Safety: deduplicate columns in case the DB driver returns duplicates
+        df = df.loc[:, ~df.columns.duplicated()]
 
         if not df.empty:
             # Save to extract.parquet
