@@ -46,8 +46,8 @@ tasks:
 
       - id: check_if_empty
         type: io.kestra.plugin.core.flow.If
-        # Capture the value after 'NEW_WATERMARK: ' and compare to the (potentially defaulted) input watermark
-        condition: "{{ (outputs.python_extract.stdOutValue | substringAfter('NEW_WATERMARK: ') | trim) != (outputs.get_watermark.value ?? '1970-01-01 00:00:00') }}"
+        # Directly use the new native variable from the Python output
+        condition: "{{ outputs.python_extract.vars.new_watermark != (outputs.get_watermark.value ?? '1970-01-01 00:00:00') }}"
         then:
           - id: upload_to_s3
             type: io.kestra.plugin.aws.s3.Upload
@@ -62,7 +62,7 @@ tasks:
             type: io.kestra.plugin.core.kv.Set
             namespace: my.project
             key: "watermark_{{ inputs.partner_id }}_{{ taskrun.value }}"
-            value: "{{ outputs.python_extract.stdOutValue | substringAfter('NEW_WATERMARK: ') | trim }}"
+            value: "{{ outputs.python_extract.vars.new_watermark }}"
 
 errors:
   - id: alert_sns

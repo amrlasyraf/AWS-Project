@@ -69,15 +69,17 @@ def main():
                 
                 # Format datetime to string if necessary
                 if isinstance(max_updated_at, (datetime, pd.Timestamp)):
-                    print(f"NEW_WATERMARK: {max_updated_at.strftime('%Y-%m-%d %H:%M:%S.%f')}")
+                    new_val = max_updated_at.strftime('%Y-%m-%d %H:%M:%S.%f')
                 else:
-                    print(f"NEW_WATERMARK: {max_updated_at}")
+                    new_val = str(max_updated_at)
+                
+                print('::{"outputs": {"new_watermark": "' + new_val + '"}}::')
             except (KeyError, ValueError):
                 # Fallback to current watermark if updated_at is not found in results
-                print(f"NEW_WATERMARK: {args.watermark}")
+                print('::{"outputs": {"new_watermark": "' + str(args.watermark) + '"}}::')
         else:
             # If no new data, print the existing watermark
-            print(f"NEW_WATERMARK: {args.watermark}")
+            print('::{"outputs": {"new_watermark": "' + str(args.watermark) + '"}}::')
 
     except Exception as e:
         print(f"Error during extraction: {e}", file=sys.stderr)
