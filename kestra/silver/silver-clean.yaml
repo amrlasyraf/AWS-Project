@@ -1,5 +1,5 @@
 id: silver-clean
-namespace: my.project
+namespace: ewallet.layer
 
 description: "Worker: Cleanse and cast data from Bronze layer into Silver 1 layer."
 

@@ -1,5 +1,5 @@
 id: bronze-ingestion
-namespace: my.project
+namespace: ewallet.layer
 
 description: "Worker: Stateful Incremental CDC (Change Data Capture) with Defensive String Casting."
 
@@ -23,7 +23,7 @@ tasks:
     tasks:
       - id: get_watermark
         type: io.kestra.plugin.core.kv.Get
-        namespace: my.project
+        namespace: ewallet.layer
         key: "watermark_{{ inputs.partner_id }}_{{ taskrun.value }}"
         # Correct property for Kestra 0.15+ (kv Get)
         errorOnMissing: false
@@ -60,7 +60,7 @@ tasks:
 
           - id: update_watermark
             type: io.kestra.plugin.core.kv.Set
-            namespace: my.project
+            namespace: ewallet.layer
             key: "watermark_{{ inputs.partner_id }}_{{ taskrun.value }}"
             value: "{{ outputs.python_extract[taskrun.value].vars.new_watermark }}"
 

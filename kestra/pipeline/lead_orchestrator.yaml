@@ -1,5 +1,5 @@
 id: lead_orchestrator
-namespace: my.project
+namespace: ewallet.layer
 
 description: "Controlling flow for Project Shield-Stream multi-partner medallion architecture."
 
@@ -24,7 +24,7 @@ tasks:
       - id: trigger_bronze_extraction
         type: io.kestra.plugin.core.flow.Subflow
         flowId: bronze-ingestion
-        namespace: my.project
+        namespace: ewallet.layer
         wait: true
         transmitFailed: true
         inputs:
@@ -34,14 +34,14 @@ tasks:
   - id: silver_1_cleanse
     type: io.kestra.plugin.core.flow.Subflow
     flowId: silver-clean
-    namespace: my.project
+    namespace: ewallet.layer
     wait: true
     transmitFailed: true
 
   - id: silver_2_merge
     type: io.kestra.plugin.core.flow.Subflow
     flowId: silver-merge
-    namespace: my.project
+    namespace: ewallet.layer
     wait: true
     transmitFailed: true
 

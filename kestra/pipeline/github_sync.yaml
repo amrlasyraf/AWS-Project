@@ -1,5 +1,5 @@
 id: github_sync
-namespace: amrlasyraf.system
+namespace: ewallet.layer
 tasks:
   - id: sync_repository
     type: io.kestra.plugin.git.SyncNamespaceFiles
@@ -7,7 +7,7 @@ tasks:
     branch: main
     username: amrlasyraf
     password: "{{ secret('GITHUB_TOKEN') }}"
-    namespace: my.project
+    namespace: ewallet.layer
     gitDirectory: kestra/
 variables:
   sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
