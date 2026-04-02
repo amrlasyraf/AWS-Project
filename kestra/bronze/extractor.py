@@ -72,6 +72,11 @@ def main():
         new_watermark = args.watermark
 
         if not df.empty:
+            # Inject Bronze layer metadata
+            df['ingest_ts'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            df['source_partner'] = args.partner
+            df['batch_table'] = args.table
+
             # Save to extract.parquet
             df.to_parquet('extract.parquet', index=False, compression='snappy')
 
