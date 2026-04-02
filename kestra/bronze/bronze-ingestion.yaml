@@ -40,21 +40,21 @@ tasks:
           AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
           AWS_DEFAULT_REGION: "ap-southeast-1"
         commands:
-          - "python bronze/extractor.py --table {{ taskrun.value }} --partner {{ inputs.partner_id }} --watermark \"{{ outputs.get_watermark.value ?? '1970-01-01 00:00:00' }}\""
+          - "python bronze/extractor.py --table {{ taskrun.value }} --partner {{ inputs.partner_id }} --watermark \"{{ outputs.get_watermark[taskrun.value].value ?? '1970-01-01 00:00:00' }}\""
         outputFiles:
           - "extract.parquet"
 
       - id: check_if_empty
         type: io.kestra.plugin.core.flow.If
-        # Safe check to ensure variables are defined before comparison
-        condition: "{{ outputs.python_extract.vars is defined and outputs.python_extract.vars.new_watermark is defined and outputs.python_extract.vars.new_watermark != (outputs.get_watermark.value ?? '1970-01-01 00:00:00') }}"
+        # Iteration-aware condition indexing
+        condition: "{{ outputs.python_extract[taskrun.value].vars is defined and outputs.python_extract[taskrun.value].vars.new_watermark != (outputs.get_watermark[taskrun.value].value ?? '1970-01-01 00:00:00') }}"
         then:
           - id: upload_to_s3
             type: io.kestra.plugin.aws.s3.Upload
             accessKeyId: "{{ kv('AWS_ACCESS_KEY_ID') }}"
             secretKeyId: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
             region: "ap-southeast-1"
-            from: "{{ outputs.python_extract.outputFiles['extract.parquet'] }}"
+            from: "{{ outputs.python_extract[taskrun.value].outputFiles['extract.parquet'] }}"
             bucket: "{{ vars.s3_bucket }}"
             key: "bronze/partner={{ inputs.partner_id }}/table={{ taskrun.value }}/hour={{ vars.extraction_hour }}/data.parquet"
 
@@ -62,7 +62,7 @@ tasks:
             type: io.kestra.plugin.core.kv.Set
             namespace: my.project
             key: "watermark_{{ inputs.partner_id }}_{{ taskrun.value }}"
-            value: "{{ outputs.python_extract.vars.new_watermark }}"
+            value: "{{ outputs.python_extract[taskrun.value].vars.new_watermark }}"
 
 errors:
   - id: alert_sns
