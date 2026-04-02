@@ -79,7 +79,13 @@ To meet enterprise security standards for Project Shield-Stream, database creden
 - **Improved Reliability**: Uses a secure method to transfer data between tools, ensuring critical information is never missed.
 - **Smart "No Data" Handling**: If there’s no new information from a partner, the system intelligently skips the step instead of failing.
 - **Cost-Effective Storage**: Saves data in a compressed format that speeds up analysis while lowering storage costs.
-- **Smart Folder Organization**: Automatically sorts data into folders by **Year**, **Month**, **Day**, and **Hour** for easy retrieval.
+- **Smart Folder Organization**: Automatically sorts data into folders by **Year**, **Month**, and **Day** for easy retrieval. Partitioning is intentionally set to a **daily grain** — hourly partitioning was evaluated and removed to prevent excessive small-file generation, which degrades Athena query performance and increases S3 API costs.
+
+> [!NOTE]
+> **S3 Partitioning Strategy — Daily Grain**  
+> Bronze files are stored at the following path structure:  
+> `s3://ewallet-storage/bronze/partner={PARTNER}/table={TABLE}/year={YYYY}/month={MM}/day={DD}/data.parquet`  
+> Hourly sub-partitions (`/hour={HH}/`) were deliberately removed. Running the pipeline multiple times in a day will overwrite the day's `data.parquet` file rather than scatter data across dozens of hourly objects, keeping downstream Athena scans efficient.
 
 ### 🥈 Silver (The Big Wallet)
 **Storage**: `s3://{{vars.s3_bucket}}/silver/unified/`  

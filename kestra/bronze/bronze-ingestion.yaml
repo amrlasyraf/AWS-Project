@@ -17,7 +17,6 @@ variables:
   year: "{{ now() | date('yyyy') }}"
   month: "{{ now() | date('MM') }}"
   day: "{{ now() | date('dd') }}"
-  hour: "{{ now() | date('HH') }}"
 
 tasks:
   - id: extraction_loop
@@ -59,7 +58,7 @@ tasks:
             region: "ap-southeast-1"
             from: "{{ outputs.python_extract[parents[0].taskrun.value].outputFiles['extract.parquet'] }}"
             bucket: "{{ vars.s3_bucket }}"
-            key: "bronze/partner={{ inputs.partner_id }}/table={{ parents[0].taskrun.value }}/year={{ vars.year }}/month={{ vars.month }}/day={{ vars.day }}/hour={{ vars.hour }}/data.parquet"
+            key: "bronze/partner={{ inputs.partner_id }}/table={{ parents[0].taskrun.value }}/year={{ vars.year }}/month={{ vars.month }}/day={{ vars.day }}/data.parquet"
 
           - id: update_watermark
             type: io.kestra.plugin.core.kv.Set
