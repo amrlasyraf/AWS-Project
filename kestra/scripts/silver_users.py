@@ -101,7 +101,10 @@ def main():
 
     # Upsert data into Silver Layer
     print(f"Upserting data into {table_identifier}...")
-    table.upsert(arrow_table)
+    
+    # FIX: Pass 'user_id' as the join column to the upsert method
+    table.upsert(arrow_table, on="user_id")
+    
     print("Silver layer update successful.")
 
 if __name__ == "__main__":
