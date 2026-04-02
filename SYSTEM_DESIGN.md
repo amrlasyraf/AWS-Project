@@ -26,6 +26,10 @@ To ensure robustness and scalability, the pipeline follows the **Master-Worker (
 
 This separation of concerns allows for isolated failure modes—if Partner A's extraction fails, it does not impede the extraction for Partner B or subsequent transformation steps.
 
+### 📦 Environment Stability (--only-binary)
+All Python-driven Kestra scripts utilizing computationally heavy libraries (DuckDB, PyArrow) strictly append the `--only-binary :all:` flag during the initial `uv pip install` phase.
+- **Goal**: Prevents the Kestra worker environment from attempting to compile C++ source packages locally. This uniquely averts build failures caused by missing compiler dependencies and massively accelerates pipeline spin-up efficiency for containerized script workers.
+
 ### 🛠️ Defensive "All-String" Bronze Extraction
 A critical defensive measure at the **Bronze Layer** is the manual casting of **EVERY** column to **STRING (TEXT/VARCHAR)** during the initial extraction from RDS.
 - **Goal**: Prevent pipeline failures caused by schema drift or datatype inconsistencies between Partner A and Partner B (e.g. `amount` as `INT` vs `NUMERIC`).
