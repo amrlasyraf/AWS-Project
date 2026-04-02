@@ -69,10 +69,10 @@ To meet enterprise security standards for Project Shield-Stream, database creden
 
 ---
 
-## 🏛️ Data Governance: Case-Sensitivity & S3 Pathing
-**Policy**: All partner identifiers are forced to lowercase (`| lower`) natively at the point of Bronze ingestion.
-- **Goal**: Prevent S3 path fragmentation and AWS Glue partition errors. S3 is case-sensitive, and `PARTNER_A` alongside `partner_a` would otherwise spawn divergent partition branches resulting in data fragmentation.
-- **Infrastructure Requirement**: Before the Silver pipeline executes, the `silver` database must be manually initialized within the AWS Glue console. Our PyIceberg transformations are configured to merge (`.upsert()`) to existing tables under the `silver` Glue DB; they will not natively provision the database schema container if it is entirely missing.
+## 🏛️ Global Lowercase Normalization
+**Policy**: All partner identifiers are forced to lowercase natively at the point of Bronze ingestion.
+- **Goal**: The pipeline forces lowercase partner identifiers across all orchestration steps to maintain strict consistency between native S3 storage paths, AWS Glue query partitions, and the Kestra Key-Value (KV) store mechanism. Without this, divergent iterations like `PARTNER_A` mapping alongside `partner_a` will cause data fragmentation and disjointed CDC watermarks.
+- **Infrastructure Requirement**: Before the Silver pipeline executes, the `silver` database must be manually initialized within the AWS Glue console. Our PyIceberg transformations are configured to merge (`.upsert()`) into these existing tables under the `silver` Glue DB.
 
 ---
 

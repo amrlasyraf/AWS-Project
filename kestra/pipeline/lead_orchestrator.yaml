@@ -28,7 +28,7 @@ tasks:
         wait: true
         transmitFailed: true
         inputs:
-          partner_id: "{{ taskrun.value }}"
+          partner_id: "{{ taskrun.value | lower }}"
           suffix: "{{ taskrun.value == 'PARTNER_B' ? '_partner_b' : '' }}"
 
   - id: silver_layer_parallel

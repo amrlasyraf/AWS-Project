@@ -82,6 +82,11 @@ def main():
     print(f"Input records: {input_rows}")
     print(f"Deduplicated Output records: {output_rows}")
 
+    if len(arrow_table) == 0:
+        print('No Data')
+        import sys
+        sys.exit(0)
+
     # Load Iceberg table from Glue catalog
     table = catalog.load_table("silver.transactions")
 
