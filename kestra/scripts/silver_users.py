@@ -92,12 +92,14 @@ def main():
         print(f"Table {table_identifier} not found. Initializing new Iceberg table.")
         # FIX: Define 'user_id' as an identifier field in the schema
         schema = Schema(
-            NestedField(field_id=1, name="user_id", field_type=LongType(), required=True),
+            # Change required=True to required=False to match DuckDB's output
+            NestedField(field_id=1, name="user_id", field_type=LongType(), required=False),
             NestedField(field_id=2, name="age", field_type=IntegerType(), required=False),
             NestedField(field_id=3, name="income", field_type=DoubleType(), required=False),
             NestedField(field_id=4, name="partner", field_type=StringType(), required=False),
+            # This will now match the 'timestamp' type
             NestedField(field_id=5, name="ingest_ts", field_type=TimestampType(), required=False),
-            identifier_field_ids=[1]  # Maps to user_id
+            identifier_field_ids=[1]
         )
         table = catalog.create_table(table_identifier, schema=schema)
 
