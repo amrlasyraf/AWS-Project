@@ -58,19 +58,19 @@ def main():
         WITH deduped AS (
             SELECT 
                 TRY_CAST(card_id AS BIGINT) AS card_id,
-                TRY_CAST(user_id AS BIGINT) AS user_id_clean,
-                TRY_CAST(card_status AS VARCHAR) AS status_clean,
-                TRY_CAST(card_type AS VARCHAR) AS type_clean,
+                TRY_CAST(card_brand AS VARCHAR) AS brand_clean,
+                TRY_CAST(card_on_dark_web AS BOOLEAN) AS compromised_clean,
+                TRY_CAST(credit_limit AS DOUBLE) AS limit_clean,
                 TRY_CAST(source_partner AS VARCHAR) AS partner_clean,
                 CAST(NOW() AS TIMESTAMP) AS ingest_ts_clean, 
-                ROW_NUMBER() OVER(PARTITION BY card_id ORDER BY ingest_ts_clean DESC) as rn
+                ROW_NUMBER() OVER(PARTITION BY card_id ORDER BY card_id) as rn
             FROM read_parquet('{s3_path}', hive_partitioning=1)
         )
         SELECT 
             card_id,
-            user_id_clean AS user_id,
-            status_clean AS card_status,
-            type_clean AS card_type,
+            brand_clean AS card_brand,
+            compromised_clean AS is_compromised,
+            limit_clean AS credit_limit,
             partner_clean AS partner,
             ingest_ts_clean AS ingest_ts
         FROM deduped 
