@@ -56,25 +56,20 @@ To meet enterprise security standards for Project Shield-Stream, database creden
 **Status**: `In-Progress`  
 **Storage**: `s3://{{vars.s3_bucket}}/bronze/`  
 **Logic**: 
-- **Python-Driven Extraction**: Parallel extraction from PostgreSQL RDS siloed tables (`transactions`, `users`, `cards`) using the standardized local pathing: `python kestra/bronze/extractor.py`.
-- **Environment Requirements**: The Python runtime environment strictly requires `psycopg2-binary` for database connectivity when running within Docker containers.
-- **Native Output Mechanism**: Kestra no longer parses standard console output (stdout) for state management. The Python script passes variables back to Kestra natively using JSON-formatted print statements (`::{"outputs": {...}}::`), which are automatically ingested into the `outputs.python_extract.vars` scope.
-- **Dynamic SQL Logic**: To prevent duplicate column errors and ensure schema consistency, the SQL query dynamically identifies and casts the correct primary key (e.g., `transaction_id`, `user_id`, or `card_id`) based on the target table name.
-- **Empty Data Failsafe**: In scenarios where no new data is found (incremental delta is 0), the script implements a defensive fallback that returns the original input watermark. This prevents the Pebble template engine from crashing due to missing variables in subsequent flow tasks.
-- **Data Persistence**: Extracted data is converted to **Snappy-compressed Parquet** format.
-- **Storage Strategy**: Folders are structured using **Hive Partitioning**: `bronze/partner={id}/table={table}/year={YYYY}/month={MM}/day={DD}/hour={HH}/data.parquet`.
+- **Automated Data Pulls**: Efficiently collects data from multiple partner databases at once.
+- **Improved Reliability**: Uses a secure method to transfer data between tools, ensuring critical information is never missed.
+- **Smart "No Data" Handling**: If there’s no new information from a partner, the system intelligently skips the step instead of failing.
+- **Cost-Effective Storage**: Saves data in a compressed format that speeds up analysis while lowering storage costs.
+- **Smart Folder Organization**: Automatically sorts data into folders by **Year**, **Month**, **Day**, and **Hour** for easy retrieval.
 
 ### 🥈 Silver (The Big Wallet)
 **Storage**: `s3://{{vars.s3_bucket}}/silver/unified/`  
 **Logic**:
-- **Cross-Partner Unification**: Performs a `UNION ALL` across all discovered partner partitions via DuckDB to create three distinct unified entities:
-    - `unified_transactions`
-    - `unified_users`
-    - `unified_cards`
-- **Metadata Injection**: Injects an explicit `partner_id` column during the unification process to ensure global traceability across the medallion flow.
-- **Business Enrichment**:
-    - **Currency Normalization**: All transaction amounts are converted to MYR (Exchange Rate: 4.70).
-    - **Latency Profiling**: Calculates `processing_latency` (in seconds) between `transaction_time` and `updated_at` to detect gateway delays.
+- **Unified Global View**: Joins data from all different partners into a single "Big Wallet" for easier analysis.
+- **Automated Labeling**: Automatically adds tracking labels to every record so we always know exactly which partner provided the data.
+- **Business Ready Features**:
+    - **Global Currency**: Automatically converts all amounts into a single currency (MYR) for consistent reporting.
+    - **Speed Checks**: Monitors how long transactions take so we can detect and fix any delays for our customers.
 
 ### 🥇 Gold (The Showcase)
 **Access**: AWS Athena / BI (Tableau/Power BI)  
