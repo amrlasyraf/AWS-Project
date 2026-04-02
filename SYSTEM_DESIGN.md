@@ -44,6 +44,7 @@ To meet enterprise security standards for Project Shield-Stream, database creden
 - **No Internal Storage**: RDS credentials (host, user, password, dbname) are **NEVER** stored in Kestra’s internal Key-Value (KV) store or as flow variables.
 - **Dynamic Secret Injection**:
     - **Cloud Native**: Kestra passes temporary AWS IAM credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) from the centralized KV store to the isolated Docker container.
+    - **IAM Policy**: The Kestra AWS IAM user must have the `secretsmanager:GetSecretValue` policy attached to fetch database credentials at runtime.
     - **Runtime Retrieval**: The Python extraction script (`extractor.py`) utilizes the `boto3` client to dynamically fetch the production RDS credentials directly from **AWS Secrets Manager** (`shield-stream/bronze/db-credentials`) during execution.
 - **Isolation**: This ensures that sensitive database access remains within the AWS security perimeter, while Kestra acts only as a secure orchestrator.
 
@@ -55,7 +56,11 @@ To meet enterprise security standards for Project Shield-Stream, database creden
 **Status**: `In-Progress`  
 **Storage**: `s3://{{vars.s3_bucket}}/bronze/`  
 **Logic**: 
-- **Python-Driven Extraction**: Parallel extraction from PostgreSQL RDS siloed tables (`transactions`, `users`, `cards`) using the standardized local pathing: `python kestra/bronze/extractor.py`. This ensures architectural consistency with the modular repository structure.
+- **Python-Driven Extraction**: Parallel extraction from PostgreSQL RDS siloed tables (`transactions`, `users`, `cards`) using the standardized local pathing: `python kestra/bronze/extractor.py`.
+- **Environment Requirements**: The Python runtime environment strictly requires `psycopg2-binary` for database connectivity when running within Docker containers.
+- **Native Output Mechanism**: Kestra no longer parses standard console output (stdout) for state management. The Python script passes variables back to Kestra natively using JSON-formatted print statements (`::{"outputs": {...}}::`), which are automatically ingested into the `outputs.python_extract.vars` scope.
+- **Dynamic SQL Logic**: To prevent duplicate column errors and ensure schema consistency, the SQL query dynamically identifies and casts the correct primary key (e.g., `transaction_id`, `user_id`, or `card_id`) based on the target table name.
+- **Empty Data Failsafe**: In scenarios where no new data is found (incremental delta is 0), the script implements a defensive fallback that returns the original input watermark. This prevents the Pebble template engine from crashing due to missing variables in subsequent flow tasks.
 - **Data Persistence**: Extracted data is converted to **Snappy-compressed Parquet** format.
 - **Storage Strategy**: Folders are structured using **Hive Partitioning**: `bronze/partner={id}/{table}/hour={H}/data.parquet`.
 
