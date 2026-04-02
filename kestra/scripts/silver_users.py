@@ -47,20 +47,26 @@ def main():
         print(f"No files found or error reading from path: {s3_path}. Error: {e}")
         return
 
-    # Batch of Truth query: cast to proper types, enrich, deduplicate, filter for rn = 1
+    # Batch of Truth query: use distinct aliases for casted columns to avoid shadowing
     query = f"""
         WITH deduped AS (
             SELECT 
                 TRY_CAST(user_id AS BIGINT) AS user_id,
-                TRY_CAST(username AS VARCHAR) AS username,
-                TRY_CAST(email AS VARCHAR) AS email,
-                TRY_CAST(kyc_status AS VARCHAR) AS kyc_status,
+                TRY_CAST(username AS VARCHAR) AS username_clean,
+                TRY_CAST(email AS VARCHAR) AS email_clean,
+                TRY_CAST(kyc_status AS VARCHAR) AS kyc_status_clean,
                 TRY_CAST(source_partner AS VARCHAR) AS partner,
                 TRY_CAST(ingest_ts AS TIMESTAMP) AS ingest_ts,
                 ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY ingest_ts DESC) as rn
             FROM read_parquet('{s3_path}', hive_partitioning=1)
         )
-        SELECT * EXCLUDE (rn) 
+        SELECT 
+            user_id, 
+            username_clean AS username, -- Rename back for the Iceberg table
+            email_clean AS email, 
+            kyc_status_clean AS kyc_status, 
+            partner, 
+            ingest_ts
         FROM deduped 
         WHERE rn = 1
     """

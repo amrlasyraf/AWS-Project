@@ -23,7 +23,8 @@ tasks:
       AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
       AWS_DEFAULT_REGION: "ap-southeast-1"
     commands:
-      - python scripts/silver_cards.py
+      # FIX: Ensure this matches the flow purpose
+      - python scripts/silver_users.py
 
 errors:
   - id: alert_sns
