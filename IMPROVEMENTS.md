@@ -36,16 +36,35 @@ In Progress (SNS alerting blocks are now integrated into the Kestra error handle
 ## 3. Silver Layer Compute Engine
 
 ### Current Stack / Implementation
-- **Silver Compute**: We have stabilized a stack using Python 3.11-slim, DuckDB, and PyIceberg. The system now handles ACID upserts into AWS Glue with explicit schema enforcement and PyArrow nullability casting to ensure data integrity.
+- **Silver Parity & Orchestration**: The pipeline is now fully parallelized across all domain ingestion and transformation tasks. Successfully deployed three separate domain tables with 100% stable DuckDB-to-Iceberg upserts.
+- **Silver Compute**: We have stabilized a stack using Python 3.11-slim, DuckDB, and PyIceberg. The system now handles ACID upserts into AWS Glue with rigorous schema fixes: implemented rounding for Decimals, naive timestamp casting, and forced non-nullability for PyArrow identifier fields to satisfy strict Iceberg constraints.
 - **Automation**: Table initialization is now 'self-healing,' automatically creating Iceberg tables with correct identifier field IDs if they are missing from the catalog.
 
 ### Identified Improvements
 - **Custom Containerization**: Create a pre-built Docker image with DuckDB and PyIceberg pre-installed to eliminate the apt-get and pip install overhead in the beforeCommands.
-- **Type Parity Middleware**: Implement explicit casting and rounding (DECIMAL(18,2)) in the SQL layer to prevent PyArrow conversion failures.
 - **Data Quality Quarantine**: Implement a "Data Quality Quarantine" process for rows that fail `TRY_CAST` validation during the 'Batch of Truth' querying phase. Malformed source entries that evaluate to NULL should be redirected to a dedicated Quarantine area instead of being silently skipped or uploaded as NULLs, allowing data engineers to review broken records.
 - **Migrate to PySpark**: While DuckDB is effective for current data volumes, the planned upgrade path is to migrate the Silver layer compute engine to **PySpark**. This migration will unlock:
     - **Distributed Processing**: PySpark scales horizontally across a cluster (e.g. AWS EMR or Glue), enabling the pipeline to handle significantly larger data volumes without bottlenecks.
     - **Native Apache Iceberg Integration**: PySpark provides first-class support for the **Apache Iceberg** open table format, enabling ACID transactions, time-travel queries, schema evolution, and efficient partition management directly on S3 — capabilities that are critical for a production-grade Silver layer at scale.
 
+### Completed Improvements
+- **Type Parity Middleware & Schema Fixes**: Implemented explicit casting, rounding for Decimals (`DECIMAL(18,2)`), naive timestamp casting, and forced non-nullability for PyArrow identifier fields to successfully prevent conversion failures.
+
 ### Status
-Pending
+Complete (Silver Parity achieved)
+
+---
+
+## 4. Project Roadmap: The Next Phase (Gold & Scale)
+
+### 4.1 Gold Layer Implementation
+- **Unified Customer Table**: Draft a logic flow for a "Unified Customer" table. This will join the distinct domain tables using DuckDB to calculate aggregate metrics such as total spend, average transaction value, and consolidated risk profiles.
+
+### 4.2 Metadata-Driven Refactor
+- **Generic Templating**: Transition from multiple individual flows to a single generic template that utilizes a loop and a table registry to handle 100+ tables dynamically, drastically reducing engineering overhead.
+
+### 4.3 dbt Integration
+- **dbt Core for Gold Layer**: Plan the introduction of dbt Core specifically dedicated to the Gold layer. This will manage SQL lineage, documentation, and automated data quality testing.
+
+### 4.4 Data Governance
+- **DataHub Deployment**: Outline the steps to deploy DataHub to visualize metadata, trace data lineage, and ensure data governance for cross-functional stakeholders.
