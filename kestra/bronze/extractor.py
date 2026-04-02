@@ -59,27 +59,28 @@ def main():
         # Safety: deduplicate columns in case the DB driver returns duplicates
         df = df.loc[:, ~df.columns.duplicated()]
 
+        # Initialize with current watermark in case no new data is found
+        new_watermark = args.watermark
+
         if not df.empty:
             # Save to extract.parquet
             df.to_parquet('extract.parquet', index=False, compression='snappy')
 
-            # Find and print the maximum updated_at for Kestra watermark capture
+            # Find the maximum updated_at for Kestra watermark capture
             try:
                 max_updated_at = df['updated_at'].max()
                 
                 # Format datetime to string if necessary
                 if isinstance(max_updated_at, (datetime, pd.Timestamp)):
-                    new_val = max_updated_at.strftime('%Y-%m-%d %H:%M:%S.%f')
+                    new_watermark = max_updated_at.strftime('%Y-%m-%d %H:%M:%S.%f')
                 else:
-                    new_val = str(max_updated_at)
-                
-                print('::{"outputs": {"new_watermark": "' + new_val + '"}}::')
+                    new_watermark = str(max_updated_at)
             except (KeyError, ValueError):
-                # Fallback to current watermark if updated_at is not found in results
-                print('::{"outputs": {"new_watermark": "' + str(args.watermark) + '"}}::')
-        else:
-            # If no new data, print the existing watermark
-            print('::{"outputs": {"new_watermark": "' + str(args.watermark) + '"}}::')
+                # If updated_at column missing or error finding max, keep current watermark
+                pass
+        
+        # Unconditionally print for Kestra state management
+        print('::{"outputs": {"new_watermark": "' + str(new_watermark) + '"}}::')
 
     except Exception as e:
         print(f"Error during extraction: {e}", file=sys.stderr)
