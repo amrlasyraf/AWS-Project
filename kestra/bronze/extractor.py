@@ -1,4 +1,5 @@
 import argparse
+import warnings; warnings.filterwarnings('ignore', category=UserWarning)
 import os
 import psycopg2
 import pandas as pd
