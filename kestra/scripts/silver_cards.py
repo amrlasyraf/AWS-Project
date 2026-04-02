@@ -47,20 +47,26 @@ def main():
         print(f"No files found or error reading from path: {s3_path}. Error: {e}")
         return
 
-    # Batch of Truth query: cast to proper types, enrich, deduplicate, filter for rn = 1
+    # Batch of Truth query: use distinct aliases for casted columns
     query = f"""
         WITH deduped AS (
             SELECT 
                 TRY_CAST(card_id AS BIGINT) AS card_id,
                 TRY_CAST(user_id AS BIGINT) AS user_id,
-                TRY_CAST(card_status AS VARCHAR) AS card_status,
-                TRY_CAST(card_type AS VARCHAR) AS card_type,
+                TRY_CAST(card_status AS VARCHAR) AS card_status_clean, -- Distinct alias
+                TRY_CAST(card_type AS VARCHAR) AS card_type_clean,     -- Distinct alias
                 TRY_CAST(source_partner AS VARCHAR) AS partner,
                 TRY_CAST(ingest_ts AS TIMESTAMP) AS ingest_ts,
                 ROW_NUMBER() OVER(PARTITION BY card_id ORDER BY ingest_ts DESC) as rn
             FROM read_parquet('{s3_path}', hive_partitioning=1)
         )
-        SELECT * EXCLUDE (rn) 
+        SELECT 
+            card_id, 
+            user_id, 
+            card_status_clean AS card_status, -- Rename back for the final table
+            card_type_clean AS card_type,     -- Rename back for the final table
+            partner, 
+            ingest_ts
         FROM deduped 
         WHERE rn = 1
     """
