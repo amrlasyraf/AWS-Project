@@ -62,7 +62,7 @@ To meet enterprise security standards for Project Shield-Stream, database creden
 - **Dynamic SQL Logic**: To prevent duplicate column errors and ensure schema consistency, the SQL query dynamically identifies and casts the correct primary key (e.g., `transaction_id`, `user_id`, or `card_id`) based on the target table name.
 - **Empty Data Failsafe**: In scenarios where no new data is found (incremental delta is 0), the script implements a defensive fallback that returns the original input watermark. This prevents the Pebble template engine from crashing due to missing variables in subsequent flow tasks.
 - **Data Persistence**: Extracted data is converted to **Snappy-compressed Parquet** format.
-- **Storage Strategy**: Folders are structured using **Hive Partitioning**: `bronze/partner={id}/{table}/hour={H}/data.parquet`.
+- **Storage Strategy**: Folders are structured using **Hive Partitioning**: `bronze/partner={id}/table={table}/year={YYYY}/month={MM}/day={DD}/hour={HH}/data.parquet`.
 
 ### 🥈 Silver (The Big Wallet)
 **Storage**: `s3://{{vars.s3_bucket}}/silver/unified/`  
