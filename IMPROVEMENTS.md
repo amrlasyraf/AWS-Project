@@ -28,3 +28,18 @@ Pending
 
 ### Status
 Pending
+
+---
+
+## 3. Silver Layer Compute Engine
+
+### Current Stack / Implementation
+The Silver layer currently uses **DuckDB** as its compute engine. DuckDB is well-suited for this stage due to its lightweight footprint, zero-infrastructure overhead, and fast single-node analytical query performance directly against Parquet files on S3.
+
+### Identified Improvements
+- **Migrate to PySpark**: While DuckDB is effective for current data volumes, the planned upgrade path is to migrate the Silver layer compute engine to **PySpark**. This migration will unlock:
+    - **Distributed Processing**: PySpark scales horizontally across a cluster (e.g. AWS EMR or Glue), enabling the pipeline to handle significantly larger data volumes without bottlenecks.
+    - **Native Apache Iceberg Integration**: PySpark provides first-class support for the **Apache Iceberg** open table format, enabling ACID transactions, time-travel queries, schema evolution, and efficient partition management directly on S3 — capabilities that are critical for a production-grade Silver layer at scale.
+
+### Status
+Pending
