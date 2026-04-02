@@ -12,10 +12,12 @@ inputs:
     description: "The table suffix for this partner (e.g. _partner_b)"
 
 variables:
-  # Monitoring ARN
   sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
-  extraction_hour: "{{ now() | date('yyyy-MM-dd-HH') }}"
   s3_bucket: "ewallet-storage"
+  year: "{{ now() | date('yyyy') }}"
+  month: "{{ now() | date('MM') }}"
+  day: "{{ now() | date('dd') }}"
+  hour: "{{ now() | date('HH') }}"
 
 tasks:
   - id: extraction_loop
@@ -57,7 +59,7 @@ tasks:
             region: "ap-southeast-1"
             from: "{{ outputs.python_extract[taskrun.value].outputFiles['extract.parquet'] }}"
             bucket: "{{ vars.s3_bucket }}"
-            key: "bronze/partner={{ inputs.partner_id }}/table={{ taskrun.value }}/hour={{ vars.extraction_hour }}/data.parquet"
+            key: "bronze/partner={{ inputs.partner_id }}/table={{ taskrun.value }}/year={{ vars.year }}/month={{ vars.month }}/day={{ vars.day }}/hour={{ vars.hour }}/data.parquet"
 
           - id: update_watermark
             type: io.kestra.plugin.core.kv.Set
