@@ -18,3 +18,13 @@ The system currently pulls data from three main sources (transactions, users, an
 
 ### Status
 Pending
+
+---
+
+## 2. Data Observability & Anomaly Detection — Bronze Layer
+
+### Identified Improvements
+- **Row Count Deviation Check**: Implement a row count deviation check during the extraction phase. The pipeline should calculate the monthly average of extracted rows per session. If a new extraction session deviates from this average by more than 20%, it should trigger an AWS SNS alert to warn the team of potential source system anomalies, such as missed records or a spike in source data.
+
+### Status
+Pending
