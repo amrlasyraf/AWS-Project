@@ -1,6 +1,7 @@
 import os
 import datetime
 import duckdb
+import pyarrow as pa
 from pyiceberg.catalog import load_catalog
 from pyiceberg.exceptions import NoSuchTableError
 from pyiceberg.schema import Schema
@@ -14,17 +15,17 @@ from pyiceberg.types import (
 )
 
 def main():
-    # Setup AWS credentials from Kestra environment variables
+    # Setup AWS credentials
     aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID')
     aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
     aws_region = os.environ.get('AWS_DEFAULT_REGION', 'ap-southeast-1')
 
-    # Path for the Bronze layer partitioned by date
+    # Bronze layer S3 path
     now = datetime.datetime.now(datetime.timezone.utc)
     year, month, day = now.strftime('%Y'), now.strftime('%m'), now.strftime('%d')
     s3_path = f"s3://ewallet-storage/bronze/partner=*/table=users/{year}/{month}/{day}/*.parquet"
 
-    # Initialize pyiceberg catalog using AWS Glue
+    # Initialize pyiceberg catalog
     catalog = load_catalog(
         "glue_catalog",
         **{
@@ -36,7 +37,7 @@ def main():
         }
     )
 
-    # Initialize DuckDB with S3 support
+    # Initialize DuckDB
     con = duckdb.connect()
     con.execute("INSTALL httpfs;")
     con.execute("LOAD httpfs;")
@@ -45,19 +46,16 @@ def main():
     con.execute(f"SET s3_secret_access_key='{aws_secret_key}';")
 
     try:
-        # Check if files exist before processing
         input_count_query = f"SELECT COUNT(*) FROM read_parquet('{s3_path}', hive_partitioning=1)"
         input_rows = con.execute(input_count_query).fetchone()[0]
-        
         if input_rows == 0:
-            print(f"No records found in path: {s3_path}. Exiting.")
+            print("No records found. Exiting.")
             return
     except Exception as e:
-        print(f"Error accessing S3 path: {e}")
+        print(f"S3 Access Error: {e}")
         return
 
-    # Transformation Query: Cast types and Deduplicate using window functions
-    # Using 'clean' aliases to avoid DuckDB Binder Errors
+    # SQL Transformation: Cast ingest_ts to naive TIMESTAMP to match Iceberg
     query = f"""
         WITH deduped AS (
             SELECT 
@@ -65,7 +63,7 @@ def main():
                 TRY_CAST(current_age AS INTEGER) AS age_clean,
                 TRY_CAST(yearly_income AS DOUBLE) AS income_clean,
                 TRY_CAST(source_partner AS VARCHAR) AS partner_clean,
-                NOW() AS ingest_ts_clean, 
+                CAST(NOW() AS TIMESTAMP) AS ingest_ts_clean, 
                 ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY user_id) as rn
             FROM read_parquet('{s3_path}', hive_partitioning=1)
         )
@@ -79,32 +77,36 @@ def main():
         WHERE rn = 1
     """
 
-    # Convert Result to PyArrow Table
+    # Create Arrow Table
     arrow_table = con.execute(query).arrow()
-    output_rows = len(arrow_table)
-    print(f"Successfully processed {input_rows} raw records into {output_rows} unique records.")
+    
+    # CRITICAL FIX: Cast user_id to non-nullable to satisfy Iceberg identifier requirements
+    user_id_idx = arrow_table.schema.get_field_index("user_id")
+    new_field = arrow_table.schema.field(user_id_idx).with_nullable(False)
+    updated_schema = arrow_table.schema.set(user_id_idx, new_field)
+    arrow_table = arrow_table.cast(updated_schema)
 
-    # Load or Create the Iceberg Table in Glue
+    output_rows = len(arrow_table)
+    print(f"Processed {input_rows} raw to {output_rows} unique records.")
+
+    # Load or Create Table
     table_identifier = "silver.users"
     try:
         table = catalog.load_table(table_identifier)
     except NoSuchTableError:
-        print(f"Table {table_identifier} not found. Initializing new Iceberg table.")
-        # FIX: Define 'user_id' as an identifier field in the schema
+        print(f"Initializing {table_identifier} with identifier field...")
         schema = Schema(
-            # Change required=True to required=False to match DuckDB's output
-            NestedField(field_id=1, name="user_id", field_type=LongType(), required=False),
+            NestedField(field_id=1, name="user_id", field_type=LongType(), required=True),
             NestedField(field_id=2, name="age", field_type=IntegerType(), required=False),
             NestedField(field_id=3, name="income", field_type=DoubleType(), required=False),
             NestedField(field_id=4, name="partner", field_type=StringType(), required=False),
-            # This will now match the 'timestamp' type
             NestedField(field_id=5, name="ingest_ts", field_type=TimestampType(), required=False),
             identifier_field_ids=[1]
         )
         table = catalog.create_table(table_identifier, schema=schema)
 
-    # Upsert data into Silver Layer (Identity is now handled by the table metadata)
-    print(f"Upserting data into {table_identifier}...")
+    # Final Upsert
+    print(f"Upserting into {table_identifier}...")
     table.upsert(arrow_table)
     print("Silver layer update successful.")
 
