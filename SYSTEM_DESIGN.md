@@ -118,9 +118,11 @@ To meet enterprise security standards for Project Shield-Stream, database creden
     - **Speed Checks**: Monitors how long transactions take so we can detect and fix any delays for our customers.
 
 ### 🥇 Gold (The Showcase)
-**Access**: AWS Athena / BI (Tableau/Power BI)  
+**Access**: AWS Athena / BI (Tableau/Power BI) / DuckDB Views
 **Logic**:
-- Exposes a unified External Table (`risk_db.unified_wallet_data`) for the Risk Department.
+- **End-to-End Orchestration**: Solidifies the final layer of the unified pipeline: Bronze (S3 Parquet) -> Silver (Iceberg via Python/DuckDB) -> Gold (Athena/DuckDB Views).
+- Exposes a unified External Table (`risk_db.unified_wallet_data`) for the Risk Department via AWS Athena.
+- Integrates DuckDB views directly on top of the Silver Iceberg tables for rapid data summarization (e.g., `gold-risk-summary`).
 - Optimized for analytical queries, allowing for rapid slicing by `partner`, `mcc`, or `risk_score`.
 
 ---

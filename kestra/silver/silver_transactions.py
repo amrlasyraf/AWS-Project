@@ -49,7 +49,7 @@ def main():
                 TRY_CAST(transaction_id AS VARCHAR) AS transaction_id,
                 TRY_CAST(user_id AS BIGINT) AS user_id,
                 TRY_CAST(card_id AS BIGINT) AS card_id,
-                TRY_CAST(amount AS DOUBLE) AS amount,
+                TRY_CAST(amount AS DECIMAL(18,2)) AS amount,
                 TRY_CAST(status AS VARCHAR) AS status,
                 TRY_CAST(transaction_time AS TIMESTAMP) AS transaction_time,
                 TRY_CAST(updated_at AS TIMESTAMP) AS updated_at,
@@ -59,7 +59,7 @@ def main():
                 TRY_CAST(mcc AS BIGINT) AS mcc,
                 TRY_CAST(risk_score AS DOUBLE) AS risk_score,
                 TRY_CAST(source_partner AS VARCHAR) AS partner,
-                TRY_CAST(amount AS DOUBLE) * 4.70 AS amount_myr,
+                TRY_CAST(amount AS DECIMAL(18,2)) * 4.70 AS amount_myr,
                 date_diff('second', TRY_CAST(transaction_time AS TIMESTAMP), TRY_CAST(updated_at AS TIMESTAMP)) AS processing_latency,
                 TRY_CAST(ingest_ts AS TIMESTAMP) AS ingest_ts,
                 ROW_NUMBER() OVER(PARTITION BY transaction_id ORDER BY ingest_ts DESC) as rn

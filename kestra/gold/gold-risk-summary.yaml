@@ -1,0 +1,69 @@
+id: gold-risk-summary
+namespace: ewallet.layer
+
+description: "Gold Layer: Risk Summary view on top of Silver Iceberg table via DuckDB"
+
+variables:
+  sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
+  aws_region: "ap-southeast-1"
+
+tasks:
+  - id: generate_risk_summary
+    type: io.kestra.plugin.scripts.python.Commands
+    beforeCommands:
+      - pip install --quiet uv
+      - uv pip install --system --quiet duckdb "pyiceberg[glue,s3]" pyarrow
+    env:
+      AWS_ACCESS_KEY_ID: "{{ kv('AWS_ACCESS_KEY_ID') }}"
+      AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
+      AWS_DEFAULT_REGION: "{{ vars.aws_region }}"
+    commands:
+      - |
+        python -c "
+        import duckdb
+        import os
+        from pyiceberg.catalog import load_catalog
+
+        try:
+            aws_region = os.environ.get('AWS_DEFAULT_REGION', 'ap-southeast-1')
+            aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+            aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+
+            print('Loading Glue Catalog...')
+            catalog = load_catalog(
+                'glue_catalog',
+                **{
+                    'type': 'glue',
+                    's3.region': aws_region,
+                    's3.access-key-id': aws_access_key,
+                    's3.secret-access-key': aws_secret_key,
+                    'warehouse': 's3://ewallet-storage/silver/tables'
+                }
+            )
+            
+            print('Loading silver.transactions table...')
+            table = catalog.load_table('silver.transactions')
+            arrow_table = table.scan().to_arrow()
+            
+            print('Connecting to DuckDB and creating view...')
+            con = duckdb.connect()
+            con.execute('CREATE OR REPLACE VIEW risk_summary AS SELECT merchant_id, date_trunc(''day'', transaction_time) as date, SUM(amount_myr) as total_volume, AVG(risk_score) as avg_risk_score FROM arrow_table GROUP BY 1, 2')
+            
+            # Show top summaries
+            res = con.execute('SELECT * FROM risk_summary ORDER BY total_volume DESC LIMIT 10').df()
+            
+            print('--- GOLD RISK SUMMARY ---')
+            print(res.to_string())
+        except Exception as e:
+            print(f'Error processing Gold view: {e}')
+        "
+
+errors:
+  - id: alert_sns
+    type: io.kestra.plugin.aws.sns.Publish
+    accessKeyId: "{{ kv('AWS_ACCESS_KEY_ID') }}"
+    secretKeyId: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
+    region: "ap-southeast-1"
+    topicArn: "{{ vars.sns_topic_arn }}"
+    from:
+      - "FAILED: {{ flow.id }}. Execution: {{ execution.id }}"
