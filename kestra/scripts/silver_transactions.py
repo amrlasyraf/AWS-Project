@@ -62,7 +62,8 @@ def main():
                 TRY_CAST(transaction_id AS VARCHAR) AS transaction_id,
                 TRY_CAST(user_id AS BIGINT) AS user_id_clean,
                 TRY_CAST(card_id AS BIGINT) AS card_id_clean,
-                TRY_CAST(amount AS DECIMAL(18,2)) AS amount_clean,
+                -- FIX: Round the casted amount
+                ROUND(TRY_CAST(amount AS DECIMAL(18,2)), 2) AS amount_clean,
                 TRY_CAST(status AS VARCHAR) AS status_clean,
                 CAST(TRY_CAST(transaction_time AS TIMESTAMP) AS TIMESTAMP) AS tx_time_clean,
                 TRY_CAST(use_chip AS VARCHAR) AS use_chip_clean,
@@ -71,7 +72,8 @@ def main():
                 TRY_CAST(mcc AS BIGINT) AS mcc_clean,
                 TRY_CAST(risk_score AS DOUBLE) AS risk_score_clean,
                 TRY_CAST(source_partner AS VARCHAR) AS partner_clean,
-                TRY_CAST(amount AS DECIMAL(18,2)) * 4.70 AS amount_myr_clean,
+                -- FIX: Round the currency conversion result
+                ROUND(TRY_CAST(amount AS DECIMAL(18,2)) * 4.70, 2) AS amount_myr_clean,
                 CAST(NOW() AS TIMESTAMP) AS ingest_ts_clean,
                 ROW_NUMBER() OVER(PARTITION BY transaction_id ORDER BY transaction_id) as rn
             FROM read_parquet('{s3_path}', hive_partitioning=1)
