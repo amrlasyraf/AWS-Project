@@ -7,16 +7,17 @@ variables:
   sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
 
 tasks:
-  - id: run_silver_users
+  - id: run_silver_cards
     type: io.kestra.plugin.scripts.python.Commands
-    # FIX: Use an image that includes libstdc++ and common data science tools
+    # FIX 1: Use the slim image to avoid extension loading errors
     containerImage: "python:3.11-slim"
     namespaceFiles:
       enabled: true
     beforeCommands:
-      # We need to install the shared library in the slim image
+      # FIX 2: Install required system library
       - apt-get update && apt-get install -y libstdc++6
       - pip install --quiet uv
+      # FIX 3: Remove '--prefer-binary' and pin DuckDB
       - "uv pip install --system --quiet duckdb==1.1.3 pyarrow 'pyiceberg[glue,s3]'"
     env:
       AWS_ACCESS_KEY_ID: "{{ kv('AWS_ACCESS_KEY_ID') }}"
