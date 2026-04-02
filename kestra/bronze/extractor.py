@@ -43,11 +43,19 @@ def main():
             port=db_port
         )
         
+        # Determine the primary key column dynamically based on the table name
+        pk_map = {
+            'transactions': 'transaction_id',
+            'users': 'user_id',
+            'cards': 'card_id'
+        }
+        pk_column = pk_map.get(args.table, 'id')
+
         # Execute extraction query
-        # Cast ID columns to TEXT inline to avoid duplicate columns from SELECT *
+        # Cast the dynamic PK column to TEXT inline to avoid duplicate columns from SELECT *
         query = (
             f"SELECT * FROM ("
-            f"  SELECT *, transaction_id::TEXT AS transaction_id, user_id::TEXT AS user_id"
+            f"  SELECT *, {pk_column}::TEXT AS {pk_column}"
             f"  FROM {args.table}"
             f"  WHERE updated_at > '{args.watermark}'"
             f") sub"
