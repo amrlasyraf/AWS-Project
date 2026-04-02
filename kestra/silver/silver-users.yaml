@@ -29,4 +29,6 @@ errors:
     region: "ap-southeast-1"
     topicArn: "{{ vars.sns_topic_arn }}"
     from:
-      - "FAILED: {{ flow.id }}. Execution: {{ execution.id }}"
+      subject: "FAILED: {{ flow.id }}"
+      # FIX: Use 'message' key inside data instead of a raw string
+      message: "Execution {{ execution.id }} failed in the Silver Layer."
