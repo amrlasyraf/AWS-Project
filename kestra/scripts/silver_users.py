@@ -90,21 +90,20 @@ def main():
         table = catalog.load_table(table_identifier)
     except NoSuchTableError:
         print(f"Table {table_identifier} not found. Initializing new Iceberg table.")
+        # FIX: Define 'user_id' as an identifier field in the schema
         schema = Schema(
-            NestedField(field_id=1, name="user_id", field_type=LongType(), required=False),
+            NestedField(field_id=1, name="user_id", field_type=LongType(), required=True),
             NestedField(field_id=2, name="age", field_type=IntegerType(), required=False),
             NestedField(field_id=3, name="income", field_type=DoubleType(), required=False),
             NestedField(field_id=4, name="partner", field_type=StringType(), required=False),
-            NestedField(field_id=5, name="ingest_ts", field_type=TimestampType(), required=False)
+            NestedField(field_id=5, name="ingest_ts", field_type=TimestampType(), required=False),
+            identifier_field_ids=[1]  # Maps to user_id
         )
         table = catalog.create_table(table_identifier, schema=schema)
 
-    # Upsert data into Silver Layer
+    # Upsert data into Silver Layer (Identity is now handled by the table metadata)
     print(f"Upserting data into {table_identifier}...")
-    
-    # FIX: Pass 'user_id' as the join column to the upsert method
-    table.upsert(arrow_table, on="user_id")
-    
+    table.upsert(arrow_table)
     print("Silver layer update successful.")
 
 if __name__ == "__main__":
