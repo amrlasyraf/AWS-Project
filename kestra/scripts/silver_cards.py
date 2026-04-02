@@ -9,6 +9,8 @@ from pyiceberg.types import (
     LongType, 
     StringType, 
     TimestampType, 
+    DoubleType, 
+    BooleanType, 
     NestedField
 )
 
@@ -53,7 +55,7 @@ def main():
         print(f"S3 Access Error: {e}")
         return
 
-    # SQL Transformation: Cast ingest_ts to naive TIMESTAMP and use distinct aliases
+    # SQL Transformation: Using actual columns found in Bronze Parquet
     query = f"""
         WITH deduped AS (
             SELECT 
@@ -80,7 +82,7 @@ def main():
     # Create Arrow Table
     arrow_table = con.execute(query).arrow()
     
-    # Force card_id to be non-nullable to satisfy Iceberg identifier rules
+    # Fix nullability for identifier field
     card_id_idx = arrow_table.schema.get_field_index("card_id")
     new_field = arrow_table.schema.field(card_id_idx).with_nullable(False)
     updated_schema = arrow_table.schema.set(card_id_idx, new_field)
@@ -95,11 +97,12 @@ def main():
         table = catalog.load_table(table_identifier)
     except NoSuchTableError:
         print(f"Initializing {table_identifier}...")
+        # Schema MUST match the SELECT clause above exactly
         schema = Schema(
             NestedField(field_id=1, name="card_id", field_type=LongType(), required=True),
-            NestedField(field_id=2, name="user_id", field_type=LongType(), required=False),
-            NestedField(field_id=3, name="card_status", field_type=StringType(), required=False),
-            NestedField(field_id=4, name="card_type", field_type=StringType(), required=False),
+            NestedField(field_id=2, name="card_brand", field_type=StringType(), required=False),
+            NestedField(field_id=3, name="is_compromised", field_type=BooleanType(), required=False),
+            NestedField(field_id=4, name="credit_limit", field_type=DoubleType(), required=False),
             NestedField(field_id=5, name="partner", field_type=StringType(), required=False),
             NestedField(field_id=6, name="ingest_ts", field_type=TimestampType(), required=False),
             identifier_field_ids=[1]
