@@ -74,7 +74,7 @@ def main():
         if not df.empty:
             # Inject Bronze layer metadata
             df['ingest_ts'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-            df['source_partner'] = args.partner
+            df['source_partner'] = args.partner.lower()
             df['batch_table'] = args.table
 
             # Save to extract.parquet

@@ -55,7 +55,7 @@ tasks:
             region: "ap-southeast-1"
             from: "{{ outputs.python_extract[parents[0].taskrun.value].outputFiles['extract.parquet'] }}"
             bucket: "{{ vars.s3_bucket }}"
-            key: "bronze/partner={{ inputs.partner_id }}/table={{ parents[0].taskrun.value }}/{{ now() | date('yyyy') }}/{{ now() | date('MM') }}/{{ now() | date('dd') }}/data.parquet"
+            key: "bronze/partner={{ inputs.partner_id | lower }}/table={{ parents[0].taskrun.value }}/{{ now() | date('yyyy') }}/{{ now() | date('MM') }}/{{ now() | date('dd') }}/data.parquet"
 
           - id: update_watermark
             type: io.kestra.plugin.core.kv.Set

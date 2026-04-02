@@ -38,6 +38,11 @@ def main():
         # Get input row counts for Kestra logging
         input_count_query = f"SELECT COUNT(*) FROM read_parquet('{s3_path}', hive_partitioning=1)"
         input_rows = con.execute(input_count_query).fetchone()[0]
+        
+        if input_rows == 0:
+            print(f"No records found in path: {s3_path}. Exiting gracefully.")
+            return
+
     except Exception as e:
         print(f"No files found or error reading from path: {s3_path}. Error: {e}")
         return
