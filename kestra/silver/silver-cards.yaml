@@ -1,0 +1,32 @@
+id: silver-cards
+namespace: ewallet.layer
+
+description: "Silver Layer: Merge Deduplicated and Transformed Cards into Iceberg"
+
+variables:
+  sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
+
+tasks:
+  - id: run_silver_cards
+    type: io.kestra.plugin.scripts.python.Commands
+    namespaceFiles:
+      enabled: true
+    beforeCommands:
+      - pip install --quiet uv
+      - uv pip install --system --quiet duckdb "pyiceberg[glue,s3]" pyarrow
+    env:
+      AWS_ACCESS_KEY_ID: "{{ kv('AWS_ACCESS_KEY_ID') }}"
+      AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
+      AWS_DEFAULT_REGION: "ap-southeast-1"
+    commands:
+      - python scripts/silver_cards.py
+
+errors:
+  - id: alert_sns
+    type: io.kestra.plugin.aws.sns.Publish
+    accessKeyId: "{{ kv('AWS_ACCESS_KEY_ID') }}"
+    secretKeyId: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
+    region: "ap-southeast-1"
+    topicArn: "{{ vars.sns_topic_arn }}"
+    from:
+      - "FAILED: {{ flow.id }}. Execution: {{ execution.id }}"

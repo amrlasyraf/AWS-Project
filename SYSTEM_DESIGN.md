@@ -116,14 +116,12 @@ To meet enterprise security standards for Project Shield-Stream, database creden
 - **Business Ready Features**:
     - **Global Currency**: Automatically converts all amounts into a single currency (MYR) for consistent reporting.
     - **Speed Checks**: Monitors how long transactions take so we can detect and fix any delays for our customers.
+- **Domain Tables (Iceberg)**: Organizes cleansed data into three core domains, enabling robust relational mapping:
+    - **`silver.transactions`**: Core transactional ledger. **Primary Key**: `transaction_id`.
+    - **`silver.users`**: Standardized user mapping (`kyc_status`, `username`, `email`). **Primary Key**: `user_id`.
+    - **`silver.cards`**: Linked physical/virtual card instruments (`card_status`, `card_type`). **Primary Key**: `card_id`.
 
-### 🥇 Gold (The Showcase)
-**Access**: AWS Athena / BI (Tableau/Power BI) / DuckDB Views
-**Logic**:
-- **End-to-End Orchestration**: Solidifies the final layer of the unified pipeline: Bronze (S3 Parquet) -> Silver (Iceberg via Python/DuckDB) -> Gold (Athena/DuckDB Views).
-- Exposes a unified External Table (`risk_db.unified_wallet_data`) for the Risk Department via AWS Athena.
-- Integrates DuckDB views directly on top of the Silver Iceberg tables for rapid data summarization (e.g., `gold-risk-summary`).
-- Optimized for analytical queries, allowing for rapid slicing by `partner`, `mcc`, or `risk_score`.
+
 
 ---
 
