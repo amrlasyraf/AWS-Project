@@ -22,7 +22,7 @@ tasks:
       Kestra.outputs({'tables': data})
 
   - id: process_silver_audits
-    type: io.kestra.plugin.core.flow.EachParallel
+    type: io.kestra.plugin.core.flow.EachSequential
     value: "{{ outputs.read_registry.vars.tables }}"
     tasks:
       - id: run_silver_audit_logger
