@@ -20,9 +20,10 @@ Project Shield-Stream implements a **Metadata-Driven** ingestion architecture, m
 
 ### 🔌 Enterprise Orchestration (**Status**: `Verified`)
 To ensure robustness and scalability, the pipeline follows the **Master-Worker (Subflow)** orchestration pattern using Kestra:
-- **Lead Orchestrator**: Acts as the central controller, managing active partner lists and coordinating execution across workers.
+- **Lead Orchestrator**: Acts as the central controller, managing active partner lists and sequentially triggering the Medallion progression (Bronze -> Silver -> Gold).
 - **Worker Bronze**: Parametrized flow for siloed partner data extraction into S3.
-- **Worker Silver (Cleanse & Merge)**: Dedicated flows for multi-stage data transformation.
+- **Worker Silver (Cleanse & Merge)**: Dedicated metadata-driven flows for deduplication and schema evolution.
+- **Worker Gold & Audit Framework**: Subflows handling high-level analytics aggregation (`gold-user-risk-profile.yaml`) and inline data quality checks (`bronze-monitoring.yaml`, `silver-monitoring.yaml`).
 
 This separation of concerns allows for isolated failure modes—if Partner A's extraction fails, it does not impede the extraction for Partner B or subsequent transformation steps.
 
@@ -154,10 +155,10 @@ To ensure high availability and rapid incident response, Project Shield-Stream i
 
 ---
 
-## 📊 Data Observability & Audit Logging
-To move beyond basic operational alerts to strict data-quality tracking, the pipeline features a dedicated **Iceberg Audit Layer**:
-- **Monitoring Orchestrators**: Dedicated master flows (`bronze-monitoring.yaml`, `silver-monitoring.yaml`) read the shared `registry.json` and fan-out parallel Python auditing tasks to isolate monitoring compute from the ingestion stream.
-- **Circuit Breakers & Metrics**: Custom Python scripts (`bronze_audit_logger.py`, `silver_audit_logger.py`) dynamically interrogate source RDS volumes, aggregate Bronze DuckDB metrics, and compare against Silver Iceberg row counts. They actively track data anomalies like `null_pk_count` in real-time.
+## 📊 Data Observability & Audit Logging (**Status**: `Live`)
+To move beyond basic operational alerts to strict data-quality tracking, the pipeline features an integrated **Iceberg Audit Layer**:
+- **Inline Circuit Breakers**: Monitoring flows (`bronze-monitoring.yaml`, `silver-monitoring.yaml`) are formally wired into the master `lead_orchestrator.yaml`. Instead of isolating monitoring compute, these act as true circuit breakers—instantly halting the pipeline and triggering SNS alerts if missing primary keys or schema type mismatches are detected.
+- **Accurate PyIceberg Row Parity**: Custom Python scripts (`bronze_audit_logger.py`, `silver_audit_logger.py`) are used to enforce row-count parity across layers. The Silver auditor directly utilizes the `PyIceberg` catalog connection to ensure accurate metadata reads (resolving early issues with DuckDB catalog instantiation logic returning false zeros).
 - **Centralized Audit Table**: All execution metadata across both stages is continuously appended to `silver.pipeline_audit` (a PyIceberg table stored in Glue/S3). This builds an immutable, cross-stage ledger acting as the foundation for zero-maintenance AWS QuickSight dashboarding and pipeline lag monitoring.
 
 ---

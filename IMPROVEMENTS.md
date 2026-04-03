@@ -21,6 +21,11 @@
 - **Warning-Free Execution**: Integrated Python `warnings.catch_warnings()` for pristine log outputs.
 - **Self-Healing Namespaces**: Uses `NoSuchNamespaceError` interception to seamlessly provision missing AWS Glue databases.
 
+### 4. Data Observability & Audit Logging
+- **Automated Circuit Breaking**: Integrated audit logging subflows (`bronze-monitoring.yaml`, `silver-monitoring.yaml`) directly into the lead orchestrator. This halts the pipeline immediately upon detecting data quality degradation, such as schema mismatches or missing primary keys.
+- **Iceberg Audit Ledger**: Centralized execution tracking, type validation, and row-count metrics into a shared `silver.pipeline_audit` Iceberg table.
+- **Accurate Telemetry**: Refactored the Silver audit metrics to natively fetch exact, real-time row counts directly from the AWS Glue catalog via PyIceberg.
+
 ---
 
 ## Phase 2: Future Enhancements & Technical Debt
@@ -31,14 +36,12 @@
 - **Filtered Reads**: Inject the watermark directly into DuckDB's Bronze scan query (`WHERE updated_at > <watermark>`).
 - **Efficient Writes**: Transition PyIceberg from `overwrite()` to incremental merging.
 
-### 2. Advanced Data Observability & Decoupling
-**Goal:** Decouple data validation from data movement to ensure ingestion speed is never compromised by audit latency.
-- **Standalone Observability Flow**: Migrate monitoring from a blocking "hook" to a standalone namespace that runs on its own independent schedule. This ensures ingestion pipelines finish at maximum speed without waiting for the `pipeline_audit` Iceberg commits to clear.
+### 2. Advanced Data Quality (DQ) Probes & Decoupling
+**Goal:** Expand circuit breakers beyond basic row volume checks and decouple monitoring where appropriate.
 - **Global Reconciliation**: Implement a "Full Circuit" audit that reconciles row counts across all four states (Source, Bronze, Silver, and Gold) in a single unified view.
-- **Advanced Data Quality (DQ) Probes**:
-    - **Schema Integrity**: Move beyond basic row counts to check for schema drift or unexpected NULL values in non-primary key columns.
-    - **SLA Monitoring**: Calculate and log "Data Freshness" (the time gap between `transaction_time` and `ingest_ts`) to alert when the pipeline exceeds a 2-hour latency threshold.
-    - **Volume Anomaly Detection**: Implement statistical checks to trigger an SNS alert if a partner suddenly sends 0 records or a 500% spike in volume.
+- **Schema Integrity**: Move beyond basic row counts to check for schema drift or unexpected NULL values in non-primary key columns.
+- **SLA Monitoring**: Calculate and log "Data Freshness" (the time gap between `transaction_time` and `ingest_ts`) to alert when the pipeline exceeds a 2-hour latency threshold.
+- **Volume Anomaly Detection**: Implement statistical checks to trigger an SNS alert if a partner suddenly sends 0 records or a 500% spike in volume.
 - **Dedicated Monitoring Service**: Transition the `pipeline_audit` table into a backend for a lightweight internal dashboard or API, using historical Iceberg snapshots to track how partner data quality evolves over months.
 
 ### 3. Analytics Engineering & Governance

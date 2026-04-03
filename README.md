@@ -35,9 +35,9 @@ Kestra Master Orchestrator (Subflow Pattern)
       │     └─ DuckDB aggregates 7-day velocities & risk scoring
       │     └─ Output: `gold.user_risk_profile` (Apache Iceberg)
       │
-      └─ 📊 Data Observability (Parallel Monitoring)
-            └─ Circuit breaker scripts monitor null Primary Keys
-            └─ Shared Iceberg Audit Ledger (`silver.pipeline_audit`)
+      └─ 📊 Data Observability (Inline Circuit Breakers)
+            └─ Audit loggers integrated into Master Flow to halt on schema or PK failure
+            └─ PyIceberg tracks row counts in Shared Ledger (`silver.pipeline_audit`)
 ```
 
 ### Transaction Lifecycle
@@ -62,9 +62,9 @@ AWS-Project/
 │   ├── metadata/
 │   │   └── registry.json               # Single Source of Truth for schemas
 │   ├── pipeline/
-│   │   ├── lead_orchestrator.yaml      # Master Flow (Bronze -> Silver -> Gold)
+│   │   ├── lead_orchestrator.yaml      # Master Flow (Bronze -> Silver -> Gold -> Audit)
 │   │   ├── silver_layer_orchestrator.yaml
-│   │   ├── bronze-monitoring.yaml      # Observability wrappers
+│   │   ├── bronze-monitoring.yaml      # Inline circuit wrappers
 │   │   └── silver-monitoring.yaml
 │   ├── scripts/
 │   │   ├── extractor.py                # Bronze CDC metadata injection
