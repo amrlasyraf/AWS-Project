@@ -69,6 +69,7 @@ def main():
         pa.field('pipeline_stage', pa.string(), nullable=False),
         pa.field('table_name', pa.string(), nullable=False),
         pa.field('source_count', pa.int64(), nullable=True),
+        pa.field('target_count', pa.int64(), nullable=True),
         pa.field('bronze_raw_count', pa.int64(), nullable=True),
         pa.field('silver_deduped_count', pa.int64(), nullable=True),
         pa.field('null_pk_count', pa.int64(), nullable=True)
@@ -81,6 +82,7 @@ def main():
         pa.array([source_count]),
         pa.array([target_count]),
         pa.array([None], type=pa.int64()),
+        pa.array([None], type=pa.int64()),
         pa.array([null_pk_count])
     ], schema=my_schema)
 
@@ -89,6 +91,8 @@ def main():
 
     try:
         audit_iceberg_table = catalog.load_table(audit_table_identifier)
+        with audit_iceberg_table.update_schema() as update:
+            update.union_by_name(audit_data.schema)
         audit_iceberg_table.append(audit_data)
     except NoSuchTableError:
         print(f"INFO: Initializing shared audit table {audit_table_identifier}...")
@@ -97,9 +101,10 @@ def main():
             NestedField(field_id=2, name="pipeline_stage", field_type=StringType(), required=True),
             NestedField(field_id=3, name="table_name", field_type=StringType(), required=True),
             NestedField(field_id=4, name="source_count", field_type=LongType(), required=False),
-            NestedField(field_id=5, name="bronze_raw_count", field_type=LongType(), required=False),
-            NestedField(field_id=6, name="silver_deduped_count", field_type=LongType(), required=False),
-            NestedField(field_id=7, name="null_pk_count", field_type=LongType(), required=False)
+            NestedField(field_id=5, name="target_count", field_type=LongType(), required=False),
+            NestedField(field_id=6, name="bronze_raw_count", field_type=LongType(), required=False),
+            NestedField(field_id=7, name="silver_deduped_count", field_type=LongType(), required=False),
+            NestedField(field_id=8, name="null_pk_count", field_type=LongType(), required=False)
         )
         audit_iceberg_table = catalog.create_table(
             identifier=audit_table_identifier,
