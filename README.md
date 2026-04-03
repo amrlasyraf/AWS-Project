@@ -19,29 +19,25 @@ A production-grade data engineering pipeline for an E-Wallet application, simula
 
 ### Pipeline Flow
 
-```
-Kestra Scheduler
+```text
+Kestra Master Orchestrator (Subflow Pattern)
       │
-      ▼
-AWS Lambda: transaction_producer (Randomly selects Partner A or B)
-      │  Generates 20 transactions per run
-      │  Each transaction produces 3 records (lifecycle states)
-      ▼
-AWS RDS (PostgreSQL)
-      │  Siloed Tables: transactions (A) vs transactions_partner_b (B)
-      ▼
-Kestra Medallion Pipeline
+      ├─ 🧱 Bronze Layer (Parallel Extraction)
+      │     └─ Parquet Files injected with metadata (ingest_ts, partner)
+      │     └─ S3: bronze/partner={id}/table={name}/YYYY/MM/DD
       │
-      ├─ Bronze Layer (Parallel Extraction)
-      │     └─ Parquet Storage (S3: bronze/partner_a/ vs bronze/partner_b/)
+      ├─ 🥈 Silver Layer (Metadata-Driven Framework)
+      │     └─ Reads config directly from `metadata/registry.json`
+      │     └─ DuckDB Universal Engine performs Deduplication
+      │     └─ PyIceberg Auto-Evolves Schema & Upserts to AWS Glue
       │
-      ▼
-Silver Layer (DuckDB Unified Merge)
-      │  UNION ALL both partners
-      │  Join with Users & Cards (user_id + partner_id)
-      │  MYR Conversion & Latency Calculation
-      ▼
-AWS S3 (silver/unified_wallet_data/) ──► Athena Table (Unified View)
+      ├─ 🥇 Gold Layer (Risk Analytics)
+      │     └─ DuckDB aggregates 7-day velocities & risk scoring
+      │     └─ Output: `gold.user_risk_profile` (Apache Iceberg)
+      │
+      └─ 📊 Data Observability (Parallel Monitoring)
+            └─ Circuit breaker scripts monitor null Primary Keys
+            └─ Shared Iceberg Audit Ledger (`silver.pipeline_audit`)
 ```
 
 ### Transaction Lifecycle
@@ -60,18 +56,29 @@ Each transaction simulates a realistic processing delay by inserting **3 records
 
 ## 📂 Project Structure
 
-```
+```text
 AWS-Project/
 ├── kestra/
-│   ├── git_sync.yaml           # Kestra Git Sync workflow
-│   └── wallet_data_pipeline.yaml # New: Medallion Pipeline (Bronze/Silver)
+│   ├── metadata/
+│   │   └── registry.json               # Single Source of Truth for schemas
+│   ├── pipeline/
+│   │   ├── lead_orchestrator.yaml      # Master Flow (Bronze -> Silver -> Gold)
+│   │   ├── silver_layer_orchestrator.yaml
+│   │   ├── bronze-monitoring.yaml      # Observability wrappers
+│   │   └── silver-monitoring.yaml
+│   ├── scripts/
+│   │   ├── extractor.py                # Bronze CDC metadata injection
+│   │   ├── silver_universal_engine.py  # Dynamic DuckDB/PyIceberg Upsert logic
+│   │   ├── gold_user_risk_profile.py   # High-Risk modeling engine
+│   │   ├── bronze_audit_logger.py      # Source vs Bronze row integrity
+│   │   └── silver_audit_logger.py      # Bronze vs Silver Iceberg integrity
+│   └── gold/
+│       └── gold-user-risk-profile.yaml # Gold deployment orchestrator
 ├── lambdas/
-│   └── transaction_producer.py # Updated: Supports multi-partner silos (A/B)
-├── scripts/
-│   └── sql/
-│       ├── seed_dimensions.sql # Seeds users and cards into RDS
-│       └── athena_silver_table.sql # New: DDL for Athena Unified Table
-└── .gitignore                  # Excludes all secrets and credentials
+│   └── transaction_producer.py         # Simulates multi-partner transactions
+├── SYSTEM_DESIGN.md                    # Comprehensive internal wiki
+├── IMPROVEMENTS.md                     # v1.0 Milestones & Future Roadmap
+└── .gitignore                          # Security exclusions
 ```
 
 ---
