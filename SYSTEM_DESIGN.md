@@ -154,6 +154,14 @@ To ensure high availability and rapid incident response, Project Shield-Stream i
 
 ---
 
+## 📊 Data Observability & Audit Logging
+To move beyond basic operational alerts to strict data-quality tracking, the pipeline features a dedicated **Iceberg Audit Layer**:
+- **Monitoring Orchestrators**: Dedicated master flows (`bronze-monitoring.yaml`, `silver-monitoring.yaml`) read the shared `registry.json` and fan-out parallel Python auditing tasks to isolate monitoring compute from the ingestion stream.
+- **Circuit Breakers & Metrics**: Custom Python scripts (`bronze_audit_logger.py`, `silver_audit_logger.py`) dynamically interrogate source RDS volumes, aggregate Bronze DuckDB metrics, and compare against Silver Iceberg row counts. They actively track data anomalies like `null_pk_count` in real-time.
+- **Centralized Audit Table**: All execution metadata across both stages is continuously appended to `silver.pipeline_audit` (a PyIceberg table stored in Glue/S3). This builds an immutable, cross-stage ledger acting as the foundation for zero-maintenance AWS QuickSight dashboarding and pipeline lag monitoring.
+
+---
+
 ## 📖 Data Dictionary
 
 | Column | Type | Origin | Description |
