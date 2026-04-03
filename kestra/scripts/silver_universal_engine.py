@@ -15,6 +15,10 @@ def main():
     # 2. Initialize DuckDB & Load Bronze
     con = duckdb.connect()
     con.execute("INSTALL httpfs; LOAD httpfs;")
+    # --- ADDED THESE TWO LINES TO FIX S3 403 FORBIDDEN ---
+    con.execute("INSTALL aws; LOAD aws;")
+    con.execute("CALL load_aws_credentials();")
+    # -----------------------------------------------------
     
     # Universal Deduplication Logic
     # Qualify handles the 'latest record' logic regardless of schema
