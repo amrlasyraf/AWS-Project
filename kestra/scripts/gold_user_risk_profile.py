@@ -1,7 +1,7 @@
 import os
 import duckdb
 from pyiceberg.catalog import load_catalog
-from pyiceberg.exceptions import NoSuchTableError
+from pyiceberg.exceptions import NoSuchTableError, NoSuchNamespaceError
 from pyiceberg.schema import Schema
 from pyiceberg.types import (
     LongType, 
@@ -97,6 +97,14 @@ def main():
 
     output_rows = len(gold_arrow)
     print(f"Processed {output_rows} User Risk Profiles.")
+
+    # Self-Healing Namespace Check
+    try:
+        catalog.load_namespace_properties('gold')
+        print("INFO: Namespace 'gold' verified/created.")
+    except NoSuchNamespaceError:
+        catalog.create_namespace('gold')
+        print("INFO: Namespace 'gold' verified/created.")
 
     # Load or Create Table
     table_identifier = "gold.user_risk_profile"
