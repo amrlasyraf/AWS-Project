@@ -2,6 +2,7 @@ import os
 import duckdb
 import pyarrow as pa
 from pyiceberg.catalog import load_catalog
+from pyiceberg.exceptions import NoSuchTableError
 import warnings
 
 def main():
@@ -21,10 +22,8 @@ def main():
     con.execute(f"SET s3_secret_access_key='{os.environ.get('AWS_SECRET_ACCESS_KEY')}';")
     
     # 3. Dynamic Path Construction for Hive Partitioning
-    # This automatically searches through all partners and date folders
     s3_wildcard_path = f"s3://ewallet-storage/bronze/*/table={TABLE}/**/*.parquet"
     
-    # Enable hive_partitioning=true to let DuckDB parse the folder structure correctly
     sql = f"""
         SELECT * FROM read_parquet('{s3_wildcard_path}', hive_partitioning=true)
         QUALIFY ROW_NUMBER() OVER(PARTITION BY {PK} ORDER BY updated_at DESC) = 1
@@ -35,15 +34,31 @@ def main():
     catalog = load_catalog("glue_catalog", **{"type": "glue"})
     table_identifier = f"silver.{TABLE}"
     
+    # Explicitly define where new tables should live in S3
+    s3_location = f"s3://ewallet-storage/silver/{TABLE}"
+    
     try:
         iceberg_table = catalog.load_table(table_identifier)
         print(f"INFO: Upserting into {table_identifier}...")
+        
+        # CRITICAL FIX 1: Auto-evolve the Iceberg schema to accept new columns
+        with iceberg_table.update_schema() as update:
+            update.union_by_name(arrow_table.schema)
+            
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
             iceberg_table.overwrite(arrow_table)
-    except Exception:
+            
+    except NoSuchTableError:
+        # Better error handling: Only create if it actually doesn't exist
         print(f"INFO: Creating new table {table_identifier}...")
-        catalog.create_table(table_identifier, schema=arrow_table.schema)
+        
+        # CRITICAL FIX 2: Pass the explicit S3 location to Glue
+        catalog.create_table(
+            identifier=table_identifier, 
+            schema=arrow_table.schema,
+            location=s3_location
+        )
 
     print(f"INFO: {TABLE} processing complete.")
 
