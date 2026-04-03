@@ -15,13 +15,15 @@ def main():
     # 2. Initialize DuckDB & Load Bronze
     con = duckdb.connect()
     con.execute("INSTALL httpfs; LOAD httpfs;")
-    # --- ADDED THESE TWO LINES TO FIX S3 403 FORBIDDEN ---
     con.execute("INSTALL aws; LOAD aws;")
-    con.execute("CALL load_aws_credentials();")
-    # -----------------------------------------------------
+    
+    # --- CRITICAL FIX: Explicitly set S3 credentials ---
+    con.execute(f"SET s3_region='{os.environ.get('AWS_DEFAULT_REGION')}';")
+    con.execute(f"SET s3_access_key_id='{os.environ.get('AWS_ACCESS_KEY_ID')}';")
+    con.execute(f"SET s3_secret_access_key='{os.environ.get('AWS_SECRET_ACCESS_KEY')}';")
+    # ---------------------------------------------------
     
     # Universal Deduplication Logic
-    # Qualify handles the 'latest record' logic regardless of schema
     sql = f"""
         SELECT * FROM read_parquet('{S3_SOURCE}*.parquet')
         QUALIFY ROW_NUMBER() OVER(PARTITION BY {PK} ORDER BY updated_at DESC) = 1
