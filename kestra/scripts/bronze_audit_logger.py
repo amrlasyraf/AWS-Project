@@ -7,7 +7,7 @@ from pyiceberg.catalog import load_catalog
 from pyiceberg.exceptions import NoSuchTableError
 from datetime import datetime, timezone
 from pyiceberg.schema import Schema
-from pyiceberg.types import TimestampType, StringType, LongType, NestedField
+from pyiceberg.types import TimestamptzType, StringType, LongType, NestedField
 
 def main():
     # 1. Get Metadata
@@ -29,7 +29,7 @@ def main():
             host=os.environ.get('DB_HOST'),
             user=os.environ.get('DB_USER'),
             password=os.environ.get('DB_PASS'),
-            dbname="ewallet" # Update with your actual DB name
+            dbname="postgres" # Update with your actual DB name
         )
         cur = conn.cursor()
         # Note: For true CDC monitoring, you would add your watermark WHERE clause here
@@ -64,14 +64,25 @@ def main():
     # 4. Write to Shared Audit Table
     catalog = load_catalog("glue_catalog", **{"type": "glue"})
     
-    audit_data = pa.table({
-        'execution_time': pa.array([datetime.now(timezone.utc)], type=pa.timestamp('us', tz='UTC')),
-        'pipeline_stage': pa.array([STAGE], type=pa.string()),
-        'table_name': pa.array([TABLE], type=pa.string()),
-        'source_count': pa.array([source_count], type=pa.int64()),
-        'target_count': pa.array([target_count], type=pa.int64()),
-        'null_pk_count': pa.array([null_pk_count], type=pa.int64())
-    })
+    my_schema = pa.schema([
+        pa.field('execution_time', pa.timestamp('us', tz='UTC'), nullable=False),
+        pa.field('pipeline_stage', pa.string(), nullable=False),
+        pa.field('table_name', pa.string(), nullable=False),
+        pa.field('source_count', pa.int64(), nullable=True),
+        pa.field('bronze_raw_count', pa.int64(), nullable=True),
+        pa.field('silver_deduped_count', pa.int64(), nullable=True),
+        pa.field('null_pk_count', pa.int64(), nullable=True)
+    ])
+    
+    audit_data = pa.table([
+        pa.array([datetime.now(timezone.utc)]),
+        pa.array([STAGE]),
+        pa.array([TABLE]),
+        pa.array([source_count]),
+        pa.array([target_count]),
+        pa.array([None], type=pa.int64()),
+        pa.array([null_pk_count])
+    ], schema=my_schema)
 
     audit_table_identifier = "silver.pipeline_audit"
     audit_location = "s3://ewallet-storage/silver/pipeline_audit"
@@ -82,12 +93,13 @@ def main():
     except NoSuchTableError:
         print(f"INFO: Initializing shared audit table {audit_table_identifier}...")
         audit_schema = Schema(
-            NestedField(field_id=1, name="execution_time", field_type=TimestampType(), required=True),
+            NestedField(field_id=1, name="execution_time", field_type=TimestamptzType(), required=True),
             NestedField(field_id=2, name="pipeline_stage", field_type=StringType(), required=True),
             NestedField(field_id=3, name="table_name", field_type=StringType(), required=True),
             NestedField(field_id=4, name="source_count", field_type=LongType(), required=False),
-            NestedField(field_id=5, name="target_count", field_type=LongType(), required=False),
-            NestedField(field_id=6, name="null_pk_count", field_type=LongType(), required=False)
+            NestedField(field_id=5, name="bronze_raw_count", field_type=LongType(), required=False),
+            NestedField(field_id=6, name="silver_deduped_count", field_type=LongType(), required=False),
+            NestedField(field_id=7, name="null_pk_count", field_type=LongType(), required=False)
         )
         audit_iceberg_table = catalog.create_table(
             identifier=audit_table_identifier,
