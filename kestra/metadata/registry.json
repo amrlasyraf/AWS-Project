@@ -1,0 +1,17 @@
+[
+    {
+        "table": "users",
+        "pk": "user_id",
+        "path": "s3://ewallet-storage/bronze/users/"
+    },
+    {
+        "table": "cards",
+        "pk": "card_id",
+        "path": "s3://ewallet-storage/bronze/cards/"
+    },
+    {
+        "table": "transactions",
+        "pk": "transaction_id",
+        "path": "s3://ewallet-storage/bronze/transactions/"
+    }
+]

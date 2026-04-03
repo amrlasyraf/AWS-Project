@@ -26,6 +26,12 @@ To ensure robustness and scalability, the pipeline follows the **Master-Worker (
 
 This separation of concerns allows for isolated failure modes—if Partner A's extraction fails, it does not impede the extraction for Partner B or subsequent transformation steps.
 
+### 🧠 Universal Silver Engine & JSON Registry (Metadata-Driven Framework)
+The pipeline has formally transitioned the Silver Layer from isolated, redundant scripts (`silver_cards.py`, `silver_users.py`) to a highly robust **Metadata-Driven Framework**.
+- **The Registry**: `kestra/metadata/registry.json` acts as the single source of truth, defining table schemas, primary keys, and corresponding S3 paths.
+- **The Universal Engine**: A singular, dynamic Python script (`silver_universal_engine.py`) ingests these configuration variables (`TABLE_NAME`, `PRIMARY_KEY`, `S3_SOURCE_PATH`) at runtime. It universally handles DuckDB deduplication—via a dynamic `QUALIFY ROW_NUMBER() OVER(...) = 1` pattern—and dynamic PyIceberg table upserts/creation.
+- **Infinite Scalability & Zero-Maintenance**: Onboarding a new layer (e.g. `merchants` or `addresses`) requires **zero code or YAML edits**—simply appending a new JSON object to the registry automatically triggers a Kestra parallel fan-out (`EachParallel` in `silver_layer_orchestrator.yaml`). This eliminates technical debt while future-proofing the infrastructure.
+
 ### 📦 Environment Stability (--only-binary)
 All Python-driven Kestra scripts utilizing computationally heavy libraries (DuckDB, PyArrow) strictly append the `--only-binary :all:` flag during the initial `uv pip install` phase.
 - **Goal**: Prevents the Kestra worker environment from attempting to compile C++ source packages locally. This uniquely averts build failures caused by missing compiler dependencies and massively accelerates pipeline spin-up efficiency for containerized script workers.

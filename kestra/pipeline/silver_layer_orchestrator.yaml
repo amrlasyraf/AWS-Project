@@ -1,0 +1,56 @@
+id: silver_layer_orchestrator
+namespace: ewallet.layer
+
+tasks:
+  - id: read_registry
+    type: io.kestra.plugin.scripts.python.Commands
+    description: "Reads the JSON registry from the metadata folder"
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+    containerImage: python:3.11-slim
+    commands:
+      # Corrected path to metadata/registry.json
+      - |
+        python -c "import json; print('::core.output={\"tables\": ' + open('metadata/registry.json').read() + '}')"
+
+  - id: process_all_silver_tables
+    type: io.kestra.core.tasks.flows.EachParallel
+    description: "Fans out parallel tasks for every table in the registry"
+    value: "{{ outputs.read_registry.vars.tables }}"
+    tasks:
+      - id: run_universal_engine
+        type: io.kestra.plugin.scripts.python.Commands
+        taskRunner:
+          type: io.kestra.plugin.scripts.runner.docker.Docker
+        containerImage: python:3.11-slim
+        env:
+          TABLE_NAME: "{{ taskrun.value.table }}"
+          PRIMARY_KEY: "{{ taskrun.value.pk }}"
+          S3_SOURCE_PATH: "{{ taskrun.value.path }}"
+          AWS_DEFAULT_REGION: "{{ secret('AWS_REGION') }}"
+          AWS_ACCESS_KEY_ID: "{{ secret('AWS_ACCESS_KEY') }}"
+          AWS_SECRET_ACCESS_KEY: "{{ secret('AWS_SECRET_KEY') }}"
+        beforeCommands:
+          - apt-get update && apt-get install -y libstdc++6
+          - pip install --quiet uv
+          - uv pip install --system --quiet duckdb==1.1.3 pyarrow 'pyiceberg[glue,s3]'
+        commands:
+          # Points to the new universal engine script
+          - python scripts/silver_universal_engine.py
+
+  - id: process_gold_risk_profile
+    type: io.kestra.plugin.scripts.python.Commands
+    description: "Final Gold Layer aggregation: Runs after all Silver tables are ready"
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+    containerImage: python:3.11-slim
+    env:
+      AWS_DEFAULT_REGION: "{{ secret('AWS_REGION') }}"
+      AWS_ACCESS_KEY_ID: "{{ secret('AWS_ACCESS_KEY') }}"
+      AWS_SECRET_ACCESS_KEY: "{{ secret('AWS_SECRET_KEY') }}"
+    beforeCommands:
+      - apt-get update && apt-get install -y libstdc++6
+      - pip install --quiet uv
+      - uv pip install --system --quiet duckdb==1.1.3 pyarrow 'pyiceberg[glue,s3]'
+    commands:
+      - python scripts/gold_user_risk_profile.py
