@@ -9,12 +9,12 @@ tasks:
       type: io.kestra.plugin.scripts.runner.docker.Docker
     containerImage: python:3.11-slim
     commands:
-      # Corrected path to metadata/registry.json
       - |
         python -c "import json; print('::core.output={\"tables\": ' + open('metadata/registry.json').read() + '}')"
 
   - id: process_all_silver_tables
-    type: io.kestra.core.tasks.flows.EachParallel
+    # Updated to the non-deprecated core plugin type
+    type: io.kestra.plugin.core.flow.EachParallel
     description: "Fans out parallel tasks for every table in the registry"
     value: "{{ outputs.read_registry.vars.tables }}"
     tasks:
@@ -35,7 +35,6 @@ tasks:
           - pip install --quiet uv
           - uv pip install --system --quiet duckdb==1.1.3 pyarrow 'pyiceberg[glue,s3]'
         commands:
-          # Points to the new universal engine script
           - python scripts/silver_universal_engine.py
 
   - id: process_gold_risk_profile
