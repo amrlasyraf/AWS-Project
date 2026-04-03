@@ -31,29 +31,26 @@ tasks:
           partner_id: "{{ taskrun.value | lower }}"
           suffix: "{{ taskrun.value == 'PARTNER_B' ? '_partner_b' : '' }}"
 
-  - id: silver_layer_parallel
-    type: io.kestra.plugin.core.flow.Parallel
-    tasks:
-      - id: silver_transactions_flow
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: silver-transactions
-        namespace: ewallet.layer
-        wait: true
-        transmitFailed: true
+  - id: bronze_monitoring_hook
+    type: io.kestra.plugin.core.flow.Subflow
+    flowId: bronze-monitoring
+    namespace: ewallet.layer
+    wait: true
+    transmitFailed: true
 
-      - id: silver_users_flow
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: silver-users
-        namespace: ewallet.layer
-        wait: true
-        transmitFailed: true
+  - id: trigger_silver_layer_orchestrator
+    type: io.kestra.plugin.core.flow.Subflow
+    flowId: silver_layer_orchestrator
+    namespace: ewallet.layer
+    wait: true
+    transmitFailed: true
 
-      - id: silver_cards_flow
-        type: io.kestra.plugin.core.flow.Subflow
-        flowId: silver-cards
-        namespace: ewallet.layer
-        wait: true
-        transmitFailed: true
+  - id: silver_monitoring_hook
+    type: io.kestra.plugin.core.flow.Subflow
+    flowId: silver-monitoring
+    namespace: ewallet.layer
+    wait: true
+    transmitFailed: true
 
   - id: gold_layer_sequential
     type: io.kestra.plugin.core.flow.Sequential
