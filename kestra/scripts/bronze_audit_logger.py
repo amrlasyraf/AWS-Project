@@ -29,7 +29,7 @@ def main():
             host=os.environ.get('DB_HOST'),
             user=os.environ.get('DB_USER'),
             password=os.environ.get('DB_PASS'),
-            dbname="ewallet_prod" # Update with your actual DB name
+            dbname="ewallet" # Update with your actual DB name
         )
         cur = conn.cursor()
         # Note: For true CDC monitoring, you would add your watermark WHERE clause here
