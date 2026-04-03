@@ -31,11 +31,15 @@
 - **Filtered Reads**: Inject the watermark directly into DuckDB's Bronze scan query (`WHERE updated_at > <watermark>`).
 - **Efficient Writes**: Transition PyIceberg from `overwrite()` to incremental merging.
 
-### 2. Data Observability & Monitoring
-**Goal:** Move beyond basic operational alerts to deep data-quality validation.
-- **Audit Table**: Log rows read/written, duplicate counts, and duration into a new `silver.pipeline_audit` Iceberg table for every Kestra run.
-- **Circuit Breakers**: Implement inline DuckDB validation to intentionally fail the pipeline and trigger SNS alerts if critical anomalies (e.g., 0 rows fetched) occur.
-- **Dashboarding**: Connect AWS QuickSight directly to the Glue catalog for serverless monitoring of pipeline lag and deduplication rates.
+### 2. Advanced Data Observability & Decoupling
+**Goal:** Decouple data validation from data movement to ensure ingestion speed is never compromised by audit latency.
+- **Standalone Observability Flow**: Migrate monitoring from a blocking "hook" to a standalone namespace that runs on its own independent schedule. This ensures ingestion pipelines finish at maximum speed without waiting for the `pipeline_audit` Iceberg commits to clear.
+- **Global Reconciliation**: Implement a "Full Circuit" audit that reconciles row counts across all four states (Source, Bronze, Silver, and Gold) in a single unified view.
+- **Advanced Data Quality (DQ) Probes**:
+    - **Schema Integrity**: Move beyond basic row counts to check for schema drift or unexpected NULL values in non-primary key columns.
+    - **SLA Monitoring**: Calculate and log "Data Freshness" (the time gap between `transaction_time` and `ingest_ts`) to alert when the pipeline exceeds a 2-hour latency threshold.
+    - **Volume Anomaly Detection**: Implement statistical checks to trigger an SNS alert if a partner suddenly sends 0 records or a 500% spike in volume.
+- **Dedicated Monitoring Service**: Transition the `pipeline_audit` table into a backend for a lightweight internal dashboard or API, using historical Iceberg snapshots to track how partner data quality evolves over months.
 
 ### 3. Analytics Engineering & Governance
 **Goal:** Empower business stakeholders with trusted models and clear data lineage.
