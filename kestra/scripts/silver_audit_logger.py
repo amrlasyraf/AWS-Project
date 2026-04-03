@@ -44,16 +44,17 @@ def main():
     bronze_raw_count = raw_stats[0]
     null_pk_count = raw_stats[1] or 0
 
-    # 4. Query Silver Metrics via Iceberg
-    silver_stats_sql = f"SELECT COUNT(*) FROM iceberg_scan('silver.{TABLE}', allow_moved_paths=true)"
+    # 4. Query Silver Metrics via PyIceberg
+    catalog = load_catalog("glue_catalog", **{"type": "glue"})
+    
     try:
-        silver_deduped_count = con.execute(silver_stats_sql).fetchone()[0]
+        silver_table = catalog.load_table(f'silver.{TABLE}')
+        silver_deduped_count = len(silver_table.scan().to_arrow())
     except Exception as e:
         print(f"WARNING: Could not read Silver table. Setting count to 0. Error: {e}")
         silver_deduped_count = 0
 
     # 5. Write to Audit Table
-    catalog = load_catalog("glue_catalog", **{"type": "glue"})
     
     my_schema = pa.schema([
         pa.field('execution_time', pa.timestamp('us', tz='UTC'), nullable=False),
