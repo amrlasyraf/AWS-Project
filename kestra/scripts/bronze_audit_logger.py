@@ -93,6 +93,9 @@ def main():
         audit_iceberg_table = catalog.load_table(audit_table_identifier)
         with audit_iceberg_table.update_schema() as update:
             update.union_by_name(audit_data.schema)
+            
+        # FIX: Refresh to prevent CommitFailedException against itself
+        audit_iceberg_table = catalog.load_table(audit_table_identifier)
         audit_iceberg_table.append(audit_data)
     except NoSuchTableError:
         print(f"INFO: Initializing shared audit table {audit_table_identifier}...")
