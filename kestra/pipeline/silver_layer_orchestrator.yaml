@@ -33,12 +33,11 @@ tasks:
         namespaceFiles:
           enabled: true
         env:
-          TABLE_NAME: "{{ json(taskrun.value).table }}"
-          PRIMARY_KEY: "{{ json(taskrun.value).pk }}"
-          S3_SOURCE_PATH: "{{ json(taskrun.value).path }}"
-          AWS_DEFAULT_REGION: "{{ secret('AWS_REGION') }}"
-          AWS_ACCESS_KEY_ID: "{{ secret('AWS_ACCESS_KEY') }}"
-          AWS_SECRET_ACCESS_KEY: "{{ secret('AWS_SECRET_KEY') }}"
+          # Pass the entire task JSON as a single string to Python
+          TASK_PAYLOAD: "{{ taskrun.value }}"
+          AWS_DEFAULT_REGION: "ap-southeast-1"
+          AWS_ACCESS_KEY_ID: "{{ kv('AWS_ACCESS_KEY_ID') }}"
+          AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
         beforeCommands:
           - apt-get update && apt-get install -y libstdc++6
           - pip install --quiet uv
