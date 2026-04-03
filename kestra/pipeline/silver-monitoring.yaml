@@ -1,0 +1,47 @@
+id: silver-monitoring
+namespace: ewallet.layer
+description: "Monitors Bronze to Silver data transformations and logs to Iceberg"
+
+tasks:
+  - id: read_registry
+    type: io.kestra.plugin.scripts.python.Script
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+    containerImage: python:3.11-slim
+    namespaceFiles:
+      enabled: true
+    beforeCommands:
+      - pip install --quiet kestra
+    script: |
+      from kestra import Kestra
+      import json
+      
+      with open('metadata/registry.json', 'r') as f:
+          data = json.load(f)
+          
+      Kestra.outputs({'tables': data})
+
+  - id: process_silver_audits
+    type: io.kestra.plugin.core.flow.EachParallel
+    value: "{{ outputs.read_registry.vars.tables }}"
+    tasks:
+      - id: run_silver_audit_logger
+        type: io.kestra.plugin.scripts.python.Commands
+        taskRunner:
+          type: io.kestra.plugin.scripts.runner.docker.Docker
+        containerImage: python:3.11-slim
+        namespaceFiles:
+          enabled: true
+        env:
+          TASK_PAYLOAD: "{{ taskrun.value }}"
+          AWS_DEFAULT_REGION: "ap-southeast-1"
+          AWS_ACCESS_KEY_ID: "{{ kv('AWS_ACCESS_KEY_ID') }}"
+          AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
+          # Added a stage identifier for the Python script
+          PIPELINE_STAGE: "bronze_to_silver" 
+        beforeCommands:
+          - apt-get update && apt-get install -y libstdc++6
+          - pip install --quiet uv
+          - uv pip install --system --quiet duckdb==1.1.3 pyarrow 'pyiceberg[glue,s3]'
+        commands:
+          - python scripts/silver_audit_logger.py
