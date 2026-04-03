@@ -68,3 +68,11 @@ Complete (Silver Parity achieved)
 
 ### 4.4 Data Governance
 - **DataHub Deployment**: Outline the steps to deploy DataHub to visualize metadata, trace data lineage, and ensure data governance for cross-functional stakeholders.
+
+---
+
+## Phase 3: Analytics Engineering
+
+### Identified Improvements
+- **Migrate Gold Layer logic to dbt**: We currently manage the Gold Layer transformation using Python scripts (`gold_user_risk_profile.py`). The next planned enhancement is migrating this layer to **dbt Core** utilizing the `dbt-duckdb` adapter. 
+  - This refactor will unlock **Automated Data Lineage** (via dbt bounds/refs), **Schema Testing** (e.g., actively asserting `user_id` is unique and non-null), and **Auto-generated Documentation** ensuring the business dictionary is accessible to all stakeholders.

@@ -55,6 +55,16 @@ tasks:
         wait: true
         transmitFailed: true
 
+  - id: gold_layer_sequential
+    type: io.kestra.plugin.core.flow.Sequential
+    tasks:
+      - id: gold_user_risk_profile_flow
+        type: io.kestra.plugin.core.flow.Subflow
+        flowId: gold-user-risk-profile
+        namespace: ewallet.layer
+        wait: true
+        transmitFailed: true
+
 errors:
   - id: alert_sns
     type: io.kestra.plugin.aws.sns.Publish

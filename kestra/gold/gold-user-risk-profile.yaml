@@ -1,0 +1,35 @@
+id: gold-user-risk-profile
+namespace: ewallet.layer
+
+description: "Gold Layer: Generate User Risk Profile aggregation using DuckDB and Iceberg"
+
+variables:
+  sns_topic_arn: "arn:aws:sns:ap-southeast-1:400953388228:Kestra_Alerts"
+
+tasks:
+  - id: run_gold_user_risk_profile
+    type: io.kestra.plugin.scripts.python.Commands
+    containerImage: "python:3.11-slim"
+    namespaceFiles:
+      enabled: true
+    beforeCommands:
+      - apt-get update && apt-get install -y libstdc++6
+      - pip install --quiet uv
+      - "uv pip install --system --quiet duckdb==1.1.3 pyarrow 'pyiceberg[glue,s3]'"
+    env:
+      AWS_ACCESS_KEY_ID: "{{ kv('AWS_ACCESS_KEY_ID') }}"
+      AWS_SECRET_ACCESS_KEY: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
+      AWS_DEFAULT_REGION: "ap-southeast-1"
+    commands:
+      - python scripts/gold_user_risk_profile.py
+
+errors:
+  - id: alert_sns
+    type: io.kestra.plugin.aws.sns.Publish
+    accessKeyId: "{{ kv('AWS_ACCESS_KEY_ID') }}"
+    secretKeyId: "{{ kv('AWS_SECRET_ACCESS_KEY') }}"
+    region: "ap-southeast-1"
+    topicArn: "{{ vars.sns_topic_arn }}"
+    from:
+      subject: "FAILED: {{ flow.id }}"
+      data: "Execution {{ execution.id }} failed in the Gold Layer."
