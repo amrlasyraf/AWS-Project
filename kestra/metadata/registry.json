@@ -2,16 +2,44 @@
     {
         "table": "users",
         "pk": "user_id",
-        "path": "s3://ewallet-storage/bronze/users/"
+        "columns": {
+            "user_id": "TRY_CAST(user_id AS BIGINT)",
+            "age": "TRY_CAST(current_age AS INTEGER)",
+            "income": "TRY_CAST(yearly_income AS DOUBLE)",
+            "partner": "TRY_CAST(source_partner AS VARCHAR)",
+            "ingest_ts": "CAST(NOW() AS TIMESTAMP)"
+        }
     },
     {
         "table": "cards",
         "pk": "card_id",
-        "path": "s3://ewallet-storage/bronze/cards/"
+        "columns": {
+            "card_id": "TRY_CAST(card_id AS BIGINT)",
+            "card_brand": "TRY_CAST(card_brand AS VARCHAR)",
+            "is_compromised": "TRY_CAST(card_on_dark_web AS BOOLEAN)",
+            "credit_limit": "TRY_CAST(credit_limit AS DOUBLE)",
+            "partner": "TRY_CAST(source_partner AS VARCHAR)",
+            "ingest_ts": "CAST(NOW() AS TIMESTAMP)"
+        }
     },
     {
         "table": "transactions",
         "pk": "transaction_id",
-        "path": "s3://ewallet-storage/bronze/transactions/"
+        "columns": {
+            "transaction_id": "TRY_CAST(transaction_id AS VARCHAR)",
+            "user_id": "TRY_CAST(user_id AS BIGINT)",
+            "card_id": "TRY_CAST(card_id AS BIGINT)",
+            "amount": "ROUND(TRY_CAST(amount AS DECIMAL(18,2)), 2)",
+            "status": "TRY_CAST(status AS VARCHAR)",
+            "transaction_time": "CAST(TRY_CAST(transaction_time AS TIMESTAMP) AS TIMESTAMP)",
+            "use_chip": "TRY_CAST(use_chip AS VARCHAR)",
+            "merchant_id": "TRY_CAST(merchant_id AS BIGINT)",
+            "merchant_name": "TRY_CAST(merchant_name AS VARCHAR)",
+            "mcc": "TRY_CAST(mcc AS BIGINT)",
+            "risk_score": "TRY_CAST(risk_score AS DOUBLE)",
+            "partner": "TRY_CAST(source_partner AS VARCHAR)",
+            "amount_myr": "ROUND(TRY_CAST(amount AS DECIMAL(18,2)) * 4.70, 2)",
+            "ingest_ts": "CAST(NOW() AS TIMESTAMP)"
+        }
     }
 ]

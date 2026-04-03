@@ -1,4 +1,5 @@
 import os
+import json
 import duckdb
 import pyarrow as pa
 from pyiceberg.catalog import load_catalog
@@ -6,9 +7,19 @@ from pyiceberg.exceptions import NoSuchTableError
 import warnings
 
 def main():
-    # 1. Get Metadata from Kestra Env Vars
-    TABLE = os.environ.get('TABLE_NAME')
-    PK = os.environ.get('PRIMARY_KEY')
+    # 1. Get Metadata from Kestra Env Vars (Using the JSON payload)
+    payload_str = os.environ.get('TASK_PAYLOAD')
+    
+    if payload_str:
+        payload = json.loads(payload_str)
+        TABLE = payload['table']
+        PK = payload['pk']
+        COLUMNS = payload.get('columns', {})
+    else:
+        # Fallback for local testing or un-updated YAMLs
+        TABLE = os.environ.get('TABLE_NAME')
+        PK = os.environ.get('PRIMARY_KEY')
+        COLUMNS = {}
     
     print(f"INFO: Starting Dynamic Processing for: {TABLE}")
 
@@ -24,17 +35,31 @@ def main():
     # 3. Dynamic Path Construction for Hive Partitioning
     s3_wildcard_path = f"s3://ewallet-storage/bronze/*/table={TABLE}/**/*.parquet"
     
+    # 4. Dynamic Type Casting & SQL Generation
+    if COLUMNS:
+        select_clause = ",\n        ".join([f"{expr} AS {col}" for col, expr in COLUMNS.items()])
+    else:
+        select_clause = "*"
+        print("WARNING: No schema defined. Falling back to Bronze inference.")
+
     sql = f"""
-        SELECT * FROM read_parquet('{s3_wildcard_path}', hive_partitioning=true)
+        SELECT 
+            {select_clause}
+        FROM read_parquet('{s3_wildcard_path}', hive_partitioning=true)
         QUALIFY ROW_NUMBER() OVER(PARTITION BY {PK} ORDER BY updated_at DESC) = 1
     """
     arrow_table = con.execute(sql).arrow()
 
-    # 4. Iceberg Write (The "Universal" Handshake)
+    # Iceberg requires primary keys to be strictly non-nullable
+    pk_idx = arrow_table.schema.get_field_index(PK)
+    if pk_idx != -1:
+        new_field = arrow_table.schema.field(pk_idx).with_nullable(False)
+        updated_schema = arrow_table.schema.set(pk_idx, new_field)
+        arrow_table = arrow_table.cast(updated_schema)
+
+    # 5. Iceberg Write (The "Universal" Handshake)
     catalog = load_catalog("glue_catalog", **{"type": "glue"})
     table_identifier = f"silver.{TABLE}"
-    
-    # Explicitly define where new tables should live in S3
     s3_location = f"s3://ewallet-storage/silver/{TABLE}"
     
     try:
