@@ -1,4 +1,5 @@
 import os
+import warnings
 import duckdb
 from pyiceberg.catalog import load_catalog
 from pyiceberg.exceptions import NoSuchTableError, NoSuchNamespaceError
@@ -122,10 +123,15 @@ def main():
         )
         table = catalog.create_table(table_identifier, schema=schema)
 
-    # Full Refresh Upsert via Overwrite
-    print(f"Overwriting {table_identifier}...")
-    table.overwrite(gold_arrow)
-    print("Gold User Risk Profile layer update successful.")
+    # Final Overwrite with Warning Suppression
+    print(f"INFO: Overwriting {table_identifier}...")
+    with warnings.catch_warnings():
+        # This ignores the 'Delete operation did not match any records' 
+        # warning that triggers during the very first run of a table.
+        warnings.simplefilter("ignore", UserWarning)
+        table.overwrite(gold_arrow)
+
+    print("INFO: Gold User Risk Profile layer update successful.")
 
 if __name__ == "__main__":
     main()
